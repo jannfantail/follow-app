@@ -113,7 +113,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.decolle(vol.volId, vol.utilisateurId, _uiState.value.room, exerciceIds)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "decolle")
-                    NotificationHelper.send(ctx, "Decollage", "${vol.nomComplet} a decollé")
+                    NotificationHelper.send(ctx, "Decollage", "${vol.nomComplet} a decollé", "decolle")
                     _toast.emit("Decollage : ${vol.nomComplet}")
                     refresh()
                 }
@@ -126,7 +126,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.atterri(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "atterri")
-                    NotificationHelper.send(ctx, "Pose", "${vol.nomComplet} est posé")
+                    NotificationHelper.send(ctx, "Pose", "${vol.nomComplet} est posé", "atterri")
                     _toast.emit("Pose : ${vol.nomComplet}")
                     refresh()
                 }
@@ -139,7 +139,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.annule(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "annule")
-                    NotificationHelper.send(ctx, "Annulé", "${vol.nomComplet} annulé")
+                    NotificationHelper.send(ctx, "Annule", "${vol.nomComplet} annule", "annule")
                     _toast.emit("Annule : ${vol.nomComplet}")
                     refresh()
                 }
@@ -152,7 +152,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.transfere(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "transfere")
-                    NotificationHelper.send(ctx, "Transferé", "${vol.nomComplet} transféré")
+                    NotificationHelper.send(ctx, "Transfere", "${vol.nomComplet} transfere", "transfere")
                     _toast.emit("Transfere : ${vol.nomComplet}")
                     refresh()
                 }
@@ -165,7 +165,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.atteroValideDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "attero_valide_deco")
-                    NotificationHelper.send(ctx, "Vu deco", "${vol.nomComplet} vu au deco")
+                    NotificationHelper.send(ctx, "Vu deco", "${vol.nomComplet} vu au deco", "attero_valide_deco")
                     _toast.emit("Vu deco : ${vol.nomComplet}")
                     refresh()
                 }
@@ -178,7 +178,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.arriveDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "arrive_deco")
-                    NotificationHelper.send(ctx, "Arrivée déco", "${vol.nomComplet} est arrivé au déco")
+                    NotificationHelper.send(ctx, "Arrive deco", "${vol.nomComplet} arrive au deco", "arrive_deco")
                     _toast.emit("Arrive au deco : ${vol.nomComplet}")
                     refresh()
                 }
