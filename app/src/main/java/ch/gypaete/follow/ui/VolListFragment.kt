@@ -114,16 +114,14 @@ class VolListFragment : Fragment() {
         val exos = vm.exercices.value
         if (exos.isEmpty()) { vm.decolle(vol, emptyList()); return }
 
-        // Affichage : "NF2 7 — Huit (deux cercles en sens oppose)"
         val labels = exos.map { exo ->
             val code = exo.codeAffiche
-            if (code.isNotBlank()) "$code  —  ${exo.libelle}" else exo.libelle
+            if (code.isNotBlank()) "$code  -  ${exo.libelle}" else exo.libelle
         }.toTypedArray()
         val checked = BooleanArray(exos.size) { false }
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Exercices FSVL
-${vol.nomComplet}")
+            .setTitle("Exercices FSVL - ${vol.nomComplet}")
             .setMultiChoiceItems(labels, checked) { _, which, isChecked -> checked[which] = isChecked }
             .setPositiveButton("Decollage") { _, _ ->
                 val ids = exos.filterIndexed { i, _ -> checked[i] }.map { it.id }
