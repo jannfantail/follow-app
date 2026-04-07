@@ -166,6 +166,18 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun atteroValideDeco(vol: Vol) {
+        viewModelScope.launch {
+            repo.atteroValideDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
+                .onSuccess {
+                    SoundManager.playForAction(ctx, "attero_valide_deco")
+                    _toast.emit("Vu deco : ${vol.nomComplet}")
+                    refresh()
+                }
+                .onFailure { e -> _toast.emit("Erreur : ${e.message}") }
+        }
+    }
+
     private fun loadExercices() {
         viewModelScope.launch {
             repo.fetchExercices()
