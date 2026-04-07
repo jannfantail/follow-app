@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#1A237E</color>
+    <color name="colorPrimaryDark">#0D1452</color>
+    <color name="colorAccent">#2196F3</color>
+    <color name="colorDecolle">#1565C0</color>
+    <color name="colorAtterri">#2E7D32</color>
+    <color name="colorAnnule">#B71C1C</color>
+    <color name="colorAttente">#607D8B</color>
+</resources>
