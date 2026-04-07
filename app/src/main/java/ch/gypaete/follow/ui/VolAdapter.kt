@@ -39,13 +39,14 @@ class VolAdapter(
             tvNom.text = vol.nomComplet
 
             // Statut badge
+            val vuDeco = vol.lastEventType?.uppercase() == "ATTERO_VALIDE_DECO"
             val (statutLabel, statutColor) = when (vol.status) {
-                "wait"   -> "En attente"  to "#607D8B"
-                "air"    -> "En l'air"   to "#1565C0"
-                "down"   -> "Pose"        to "#2E7D32"
-                "cancel" -> "Annule"      to "#B71C1C"
-                "xfer"   -> "Transfere"   to "#6A1B9A"
-                else     -> vol.status    to "#757575"
+                "wait"   -> "En attente"               to "#607D8B"
+                "air"    -> if (vuDeco) "VALIDE" else "En l'air" to if (vuDeco) "#2E7D32" else "#1565C0"
+                "down"   -> "Pose"                     to "#2E7D32"
+                "cancel" -> "Annule"                   to "#B71C1C"
+                "xfer"   -> "Transfere"                to "#6A1B9A"
+                else     -> vol.status                 to "#757575"
             }
             tvStatut.text = statutLabel
             tvStatut.setBackgroundColor(Color.parseColor(statutColor))
@@ -70,7 +71,7 @@ class VolAdapter(
 
             // Couleur carte
             val cardColor = when (vol.status) {
-                "air"    -> Color.parseColor("#E3F2FD")
+                "air"    -> if (vuDeco) Color.parseColor("#E8F5E9") else Color.parseColor("#E3F2FD")
                 "down"   -> Color.parseColor("#E8F5E9")
                 "cancel" -> Color.parseColor("#FFEBEE")
                 "xfer"   -> Color.parseColor("#F3E5F5")
@@ -83,12 +84,11 @@ class VolAdapter(
                 FollowMode.DECO -> {
                     when (vol.status) {
                         "wait" -> {
-                            // En attente : Decollage bleu + Annuler rouge
                             btnPrimary.text = "Decollage"
                             btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
+                            btnPrimary.setTextColor(Color.WHITE)
                             btnPrimary.visibility = View.VISIBLE
                             btnPrimary.isEnabled = true
-                            btnPrimary.setTextColor(Color.WHITE)
                             btnPrimary.setOnClickListener { onAction(vol, "decolle") }
                             btnSecondary.text = "Annuler"
                             btnSecondary.setBackgroundColor(Color.parseColor("#C62828"))
@@ -98,7 +98,6 @@ class VolAdapter(
                             btnSecondary.setOnClickListener { onAction(vol, "annule") }
                         }
                         "air" -> {
-                            // En l'air : Decollage grise + Annuler rouge actif
                             btnPrimary.text = "Decollage"
                             btnPrimary.setBackgroundColor(Color.parseColor("#B0BEC5"))
                             btnPrimary.setTextColor(Color.parseColor("#78909C"))
@@ -113,7 +112,6 @@ class VolAdapter(
                             btnSecondary.setOnClickListener { onAction(vol, "annule") }
                         }
                         "xfer" -> {
-                            // Transfere : Arrive au deco + Annuler
                             btnPrimary.text = "Arrive au deco"
                             btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
                             btnPrimary.setTextColor(Color.WHITE)
