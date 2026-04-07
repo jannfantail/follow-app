@@ -38,11 +38,11 @@ class VolAdapter(
             tvInitiales.text = vol.initiales
             tvNom.text = vol.nomComplet
 
-            // Statut badge
             val vuDeco = vol.lastEventType?.uppercase() == "ATTERO_VALIDE_DECO"
+
             val statutLabel = when (vol.status) {
                 "wait"   -> "En attente"
-                "air"    -> if (vuDeco) "VALIDE" else "En l'air"
+                "air"    -> if (vuDeco) "VALIDE" else "En l’air"
                 "down"   -> "Pose"
                 "cancel" -> "Annule"
                 "xfer"   -> "Transfere"
@@ -59,12 +59,11 @@ class VolAdapter(
             tvStatut.text = statutLabel
             tvStatut.setBackgroundColor(Color.parseColor(statutColor))
 
-            // Exercices - utilise code + libelle retournes par l'API
+            // Exercices - utilise code + libelle retournes par API
             val exosValides = vol.exercices.filter { it.libelle.isNotBlank() }
             if (exosValides.isNotEmpty()) {
                 tvExos.visibility = View.VISIBLE
-                tvExos.text = exosValides.joinToString("
-") { exo ->
+                tvExos.text = exosValides.joinToString("\n") { exo ->
                     if (exo.code.isNotBlank()) "${exo.code}  ${exo.libelle}"
                     else exo.libelle
                 }
@@ -72,7 +71,6 @@ class VolAdapter(
                 tvExos.visibility = View.GONE
             }
 
-            // Heure (nb vols)
             if (vol.nbVols > 0) {
                 tvTime.visibility = View.VISIBLE
                 tvTime.text = "x${vol.nbVols}"
@@ -80,7 +78,6 @@ class VolAdapter(
                 tvTime.visibility = View.GONE
             }
 
-            // Couleur carte
             val cardColor = when (vol.status) {
                 "air"    -> if (vuDeco) Color.parseColor("#E8F5E9") else Color.parseColor("#E3F2FD")
                 "down"   -> Color.parseColor("#E8F5E9")
@@ -90,7 +87,6 @@ class VolAdapter(
             }
             cardView.setCardBackgroundColor(cardColor)
 
-            // Boutons selon mode
             when (mode) {
                 FollowMode.DECO -> {
                     when (vol.status) {
