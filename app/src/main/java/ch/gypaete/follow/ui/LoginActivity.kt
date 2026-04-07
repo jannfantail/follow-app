@@ -16,7 +16,6 @@ import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 class LoginActivity : AppCompatActivity() {
 
@@ -32,7 +31,7 @@ class LoginActivity : AppCompatActivity() {
         val tvError    = findViewById<TextView>(R.id.tvError)
         val progress   = findViewById<ProgressBar>(R.id.progressLogin)
 
-        etUrl.setText(prefs.getString("base_url", "https://"))
+        etUrl.setText(prefs.getString("base_url", "https://mon-ecole.ch/content/follow/"))
         etEmail.setText(prefs.getString("last_email", ""))
 
         btnLogin.setOnClickListener {
@@ -42,7 +41,7 @@ class LoginActivity : AppCompatActivity() {
             val email    = etEmail.text.toString().trim()
             val password = etPassword.text.toString()
 
-            if (url.length < 10 || email.isEmpty() || password.isEmpty()) {
+            if (url.isEmpty() || email.isEmpty() || password.isEmpty()) {
                 tvError.text = "Tous les champs sont requis"
                 tvError.visibility = View.VISIBLE
                 return@setOnClickListener
@@ -63,6 +62,7 @@ class LoginActivity : AppCompatActivity() {
                             .putString("base_url", url)
                             .putString("session_cookie", sessionCookie)
                             .putString("last_email", email)
+                            .putString("user_prenom", result.third)
                             .apply()
                         ApiClient.init(url, sessionCookie)
                         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
@@ -74,7 +74,7 @@ class LoginActivity : AppCompatActivity() {
                         progress.visibility = View.GONE
                     }
                 } catch (e: Exception) {
-                    tvError.text = "Erreur : ${e.message}"
+                    tvError.text = "Erreur reseau : ${e.message}"
                     tvError.visibility = View.VISIBLE
                     btnLogin.isEnabled = true
                     progress.visibility = View.GONE
@@ -84,36 +84,23 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun doLogin(baseUrl: String, email: String, password: String): Triple<Boolean, String, String> {
-        return try {
-            val loginUrl = "${baseUrl}api_login.php"
-            val body = FormBody.Builder()
-                .add("email", email)
-                .add("password", password)
-                .build()
-            val request = Request.Builder()
-                .url(loginUrl)
-                .post(body)
-                .build()
-            val client = OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
-                .build()
-            val response = client.newCall(request).execute()
-            val bodyStr  = response.body?.string() ?: "{}"
-            
-            // Vérifier que c'est bien du JSON
-            if (!bodyStr.trimStart().startsWith("{")) {
-                return Triple(false, "", "Reponse serveur invalide (pas JSON)")
-            }
-            
-            val json = JSONObject(bodyStr)
-            if (json.optBoolean("ok", false)) {
-                Triple(true, json.optString("session_id", ""), json.optString("prenom", ""))
-            } else {
-                Triple(false, "", json.optString("err", "Erreur inconnue"))
-            }
-        } catch (e: Exception) {
-            Triple(false, "", "Erreur connexion : ${e.message}")
+        val loginUrl = "${baseUrl}api_login.php"
+        val body = FormBody.Builder()
+            .add("email", email)
+            .add("password", password)
+            .build()
+        val request = Request.Builder()
+            .url(loginUrl)
+            .post(body)
+            .build()
+        val client   = OkHttpClient()
+        val response = client.newCall(request).execute()
+        val bodyStr  = response.body?.string() ?: "{}"
+        val json     = JSONObject(bodyStr)
+        return if (json.optBoolean("ok", false)) {
+            Triple(true, json.optString("session_id"), json.optString("prenom"))
+        } else {
+            Triple(false, "", json.optString("err", "Erreur inconnue"))
         }
     }
 }

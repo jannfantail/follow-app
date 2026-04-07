@@ -33,7 +33,7 @@
                 android:textStyle="bold"
                 android:textColor="#FFFFFF"
                 android:background="@drawable/bg_avatar"
-                android:text="AB" />
+                android:text="??" />
 
             <LinearLayout
                 android:layout_width="0dp"

@@ -1,8 +1,10 @@
 package ch.gypaete.follow.ui
 
+import android.app.Application
 import androidx.lifecycle.*
 import ch.gypaete.follow.api.FollowRepository
 import ch.gypaete.follow.model.*
+import ch.gypaete.follow.util.SoundManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -21,9 +23,10 @@ data class FollowUiState(
     val lastRefresh: Long = 0L
 )
 
-class FollowViewModel : ViewModel() {
+class FollowViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repo = FollowRepository()
+    private val ctx  = application.applicationContext
 
     private val _uiState = MutableStateFlow(FollowUiState())
     val uiState: StateFlow<FollowUiState> = _uiState.asStateFlow()
@@ -33,10 +36,6 @@ class FollowViewModel : ViewModel() {
 
     private val _toast = MutableSharedFlow<String>()
     val toast: SharedFlow<String> = _toast.asSharedFlow()
-
-    // Action avec son — émis vers l'Activity qui a le contexte
-    private val _soundAction = MutableSharedFlow<String>()
-    val soundAction: SharedFlow<String> = _soundAction.asSharedFlow()
 
     private var pollJob: Job? = null
     private val POLL_INTERVAL_MS = 5_000L
@@ -111,7 +110,7 @@ class FollowViewModel : ViewModel() {
         viewModelScope.launch {
             repo.decolle(vol.volId, vol.utilisateurId, _uiState.value.room, exerciceIds)
                 .onSuccess {
-                    _soundAction.emit("decolle")
+                    SoundManager.playForAction(ctx, "decolle")
                     _toast.emit("Decollage : ${vol.nomComplet}")
                     refresh()
                 }
@@ -123,7 +122,7 @@ class FollowViewModel : ViewModel() {
         viewModelScope.launch {
             repo.atterri(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
-                    _soundAction.emit("atterri")
+                    SoundManager.playForAction(ctx, "atterri")
                     _toast.emit("Pose : ${vol.nomComplet}")
                     refresh()
                 }
@@ -135,7 +134,7 @@ class FollowViewModel : ViewModel() {
         viewModelScope.launch {
             repo.annule(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
-                    _soundAction.emit("annule")
+                    SoundManager.playForAction(ctx, "annule")
                     _toast.emit("Annule : ${vol.nomComplet}")
                     refresh()
                 }
@@ -147,7 +146,7 @@ class FollowViewModel : ViewModel() {
         viewModelScope.launch {
             repo.transfere(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
-                    _soundAction.emit("transfere")
+                    SoundManager.playForAction(ctx, "transfere")
                     _toast.emit("Transfere : ${vol.nomComplet}")
                     refresh()
                 }
@@ -159,7 +158,7 @@ class FollowViewModel : ViewModel() {
         viewModelScope.launch {
             repo.arriveDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
-                    _soundAction.emit("arrive_deco")
+                    SoundManager.playForAction(ctx, "arrive_deco")
                     _toast.emit("Arrive au deco : ${vol.nomComplet}")
                     refresh()
                 }
