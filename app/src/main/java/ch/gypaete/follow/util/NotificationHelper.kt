@@ -37,7 +37,8 @@ object NotificationHelper {
         }
     }
 
-    fun send(context: Context, title: String, message: String) {
+    fun send(context: Context, title: String, message: String,
+              actionKey: String? = null) {
         val prefs = context.getSharedPreferences("follow", Context.MODE_PRIVATE)
         val notifEnabled = prefs.getBoolean("notif_enabled", true)
         if (!notifEnabled) return
@@ -53,7 +54,24 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        // Recuperer le son configure pour cette action
+        val soundUri: android.net.Uri = if (actionKey != null) {
+            val soundKey = prefs.getString("sound_$actionKey", "notification") ?: "notification"
+            val customUri = prefs.getString("sound_custom_$actionKey", null)
+            when (soundKey) {
+                "aucun"    -> return  // Pas de notification si son desactive
+                "alarme"   -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                "sonnerie" -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                "custom"   -> if (customUri != null) android.net.Uri.parse(customUri)
+                              else RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                else       -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            }
+        } else {
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        }
+
         val notif = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
