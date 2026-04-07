@@ -5,6 +5,7 @@ import androidx.lifecycle.*
 import ch.gypaete.follow.api.FollowRepository
 import ch.gypaete.follow.model.*
 import ch.gypaete.follow.util.SoundManager
+import ch.gypaete.follow.util.NotificationHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -41,6 +42,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
     private val POLL_INTERVAL_MS = 5_000L
 
     init {
+        NotificationHelper.init(ctx)
         loadExercices()
         refresh()
     }
@@ -111,6 +113,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.decolle(vol.volId, vol.utilisateurId, _uiState.value.room, exerciceIds)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "decolle")
+                    NotificationHelper.send(ctx, "Decollage", "${vol.nomComplet} a decollé")
                     _toast.emit("Decollage : ${vol.nomComplet}")
                     refresh()
                 }
@@ -123,6 +126,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.atterri(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "atterri")
+                    NotificationHelper.send(ctx, "Pose", "${vol.nomComplet} est posé")
                     _toast.emit("Pose : ${vol.nomComplet}")
                     refresh()
                 }
@@ -135,6 +139,7 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.annule(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "annule")
+                    NotificationHelper.send(ctx, "Annulé", "${vol.nomComplet} annulé")
                     _toast.emit("Annule : ${vol.nomComplet}")
                     refresh()
                 }
@@ -147,19 +152,8 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.transfere(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "transfere")
+                    NotificationHelper.send(ctx, "Transferé", "${vol.nomComplet} transféré")
                     _toast.emit("Transfere : ${vol.nomComplet}")
-                    refresh()
-                }
-                .onFailure { e -> _toast.emit("Erreur : ${e.message}") }
-        }
-    }
-
-    fun arriveDeco(vol: Vol) {
-        viewModelScope.launch {
-            repo.arriveDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
-                .onSuccess {
-                    SoundManager.playForAction(ctx, "arrive_deco")
-                    _toast.emit("Arrive au deco : ${vol.nomComplet}")
                     refresh()
                 }
                 .onFailure { e -> _toast.emit("Erreur : ${e.message}") }
@@ -171,7 +165,21 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
             repo.atteroValideDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
                     SoundManager.playForAction(ctx, "attero_valide_deco")
+                    NotificationHelper.send(ctx, "Vu deco", "${vol.nomComplet} vu au deco")
                     _toast.emit("Vu deco : ${vol.nomComplet}")
+                    refresh()
+                }
+                .onFailure { e -> _toast.emit("Erreur : ${e.message}") }
+        }
+    }
+
+    fun arriveDeco(vol: Vol) {
+        viewModelScope.launch {
+            repo.arriveDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
+                .onSuccess {
+                    SoundManager.playForAction(ctx, "arrive_deco")
+                    NotificationHelper.send(ctx, "Arrivée déco", "${vol.nomComplet} est arrivé au déco")
+                    _toast.emit("Arrive au deco : ${vol.nomComplet}")
                     refresh()
                 }
                 .onFailure { e -> _toast.emit("Erreur : ${e.message}") }
