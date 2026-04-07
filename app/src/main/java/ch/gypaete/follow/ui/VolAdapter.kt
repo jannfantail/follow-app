@@ -40,13 +40,21 @@ class VolAdapter(
 
             // Statut badge
             val vuDeco = vol.lastEventType?.uppercase() == "ATTERO_VALIDE_DECO"
-            val (statutLabel, statutColor) = when (vol.status) {
-                "wait"   -> "En attente"               to "#607D8B"
-                "air"    -> if (vuDeco) "VALIDE" else "En l'air" to if (vuDeco) "#2E7D32" else "#1565C0"
-                "down"   -> "Pose"                     to "#2E7D32"
-                "cancel" -> "Annule"                   to "#B71C1C"
-                "xfer"   -> "Transfere"                to "#6A1B9A"
-                else     -> vol.status                 to "#757575"
+            val statutLabel = when (vol.status) {
+                "wait"   -> "En attente"
+                "air"    -> if (vuDeco) "VALIDE" else "En l'air"
+                "down"   -> "Pose"
+                "cancel" -> "Annule"
+                "xfer"   -> "Transfere"
+                else     -> vol.status
+            }
+            val statutColor = when (vol.status) {
+                "wait"   -> "#607D8B"
+                "air"    -> if (vuDeco) "#2E7D32" else "#1565C0"
+                "down"   -> "#2E7D32"
+                "cancel" -> "#B71C1C"
+                "xfer"   -> "#6A1B9A"
+                else     -> "#757575"
             }
             tvStatut.text = statutLabel
             tvStatut.setBackgroundColor(Color.parseColor(statutColor))
