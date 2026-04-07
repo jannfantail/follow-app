@@ -11,6 +11,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import ch.gypaete.follow.R
 import ch.gypaete.follow.api.ApiClient
+import ch.gypaete.follow.service.FollowForegroundService
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
 
@@ -28,6 +34,19 @@ class MainActivity : AppCompatActivity() {
         if (url.isEmpty()) { goToLogin(); return }
 
         ApiClient.init(url, cookie)
+
+        // Demander permission notifications Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
+            }
+        }
+
+        // Demarrer le service de surveillance en arriere-plan
+        FollowForegroundService.start(this, url, cookie, 1)
+
         setContentView(R.layout.activity_main)
         setSupportActionBar(findViewById(R.id.toolbar))
 
@@ -75,6 +94,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun goToLogin() {
+        FollowForegroundService.stop(this)
+        getSharedPreferences("follow", Context.MODE_PRIVATE)
+            .edit().remove("session_cookie").apply()
         startActivity(Intent(this, LoginActivity::class.java))
         finish()
     }
