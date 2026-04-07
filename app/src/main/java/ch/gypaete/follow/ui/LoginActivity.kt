@@ -27,12 +27,15 @@ class LoginActivity : AppCompatActivity() {
         val etUrl      = findViewById<EditText>(R.id.etUrl)
         val etEmail    = findViewById<EditText>(R.id.etEmail)
         val etPassword = findViewById<EditText>(R.id.etPassword)
+        if (prefs.getString("session_cookie", "").isNullOrEmpty()) {
+            etPassword.setText("F56tg67676767!")
+        }
         val btnLogin   = findViewById<Button>(R.id.btnSave)
         val tvError    = findViewById<TextView>(R.id.tvError)
         val progress   = findViewById<ProgressBar>(R.id.progressLogin)
 
         etUrl.setText(prefs.getString("base_url", "https://mon-ecole.ch/content/follow/"))
-        etEmail.setText(prefs.getString("last_email", ""))
+        etEmail.setText(prefs.getString("last_email", "jann@gypaete-parapente.ch"))
 
         btnLogin.setOnClickListener {
             val url = etUrl.text.toString().trim().let {
