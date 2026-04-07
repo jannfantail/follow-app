@@ -25,14 +25,15 @@ class VolAdapter(
 
     class VolViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
-        private val tvInitiales  = itemView.findViewById<TextView>(R.id.tvInitiales)
-        private val tvNom        = itemView.findViewById<TextView>(R.id.tvNom)
-        private val tvStatut     = itemView.findViewById<TextView>(R.id.tvStatut)
-        private val tvExos       = itemView.findViewById<TextView>(R.id.tvExos)
-        private val tvTime       = itemView.findViewById<TextView>(R.id.tvTime)
-        private val btnPrimary   = itemView.findViewById<Button>(R.id.btnPrimary)
-        private val btnSecondary = itemView.findViewById<Button>(R.id.btnSecondary)
-        private val cardView     = itemView.findViewById<androidx.cardview.widget.CardView>(R.id.cardView)
+        private val tvInitiales   = itemView.findViewById<TextView>(R.id.tvInitiales)
+        private val tvNom         = itemView.findViewById<TextView>(R.id.tvNom)
+        private val tvStatut      = itemView.findViewById<TextView>(R.id.tvStatut)
+        private val tvExos        = itemView.findViewById<TextView>(R.id.tvExos)
+        private val tvTime        = itemView.findViewById<TextView>(R.id.tvTime)
+        private val btnPrimary    = itemView.findViewById<Button>(R.id.btnPrimary)
+        private val btnSecondary  = itemView.findViewById<Button>(R.id.btnSecondary)
+        private val btnTertiary   = itemView.findViewById<Button>(R.id.btnTertiary)
+        private val cardView      = itemView.findViewById<androidx.cardview.widget.CardView>(R.id.cardView)
 
         fun bind(vol: Vol, mode: FollowMode, onAction: (Vol, String) -> Unit) {
             tvInitiales.text = vol.initiales
@@ -40,23 +41,22 @@ class VolAdapter(
 
             val vuDeco = vol.lastEventType?.uppercase() == "ATTERO_VALIDE_DECO"
 
+            // ── Badge statut ─────────────────────────────────────────────────
             val statutLabel = when {
-                // MODE DECO : info venant de atterro
-                mode == FollowMode.DECO && vol.status == "wait"   -> "En attente"
-                mode == FollowMode.DECO && vol.status == "air" && vuDeco -> "VALIDE deco"
-                mode == FollowMode.DECO && vol.status == "air"    -> "En l'air"
-                mode == FollowMode.DECO && vol.status == "down"   -> "POSE"
-                mode == FollowMode.DECO && vol.status == "xfer"   -> "Transfere"
-                mode == FollowMode.DECO && vol.status == "cancel" -> "Annule"
-                // MODE ATTERRO : info venant du deco
-                mode == FollowMode.ATTERRO && vol.status == "air"  -> "En l'air"
-                mode == FollowMode.ATTERRO && vol.status == "down" -> "Pose"
-                mode == FollowMode.ATTERRO && vol.status == "xfer" -> "Transfere"
-                else -> vol.status
+                mode == FollowMode.DECO && vol.status == "wait"            -> "En attente"
+                mode == FollowMode.DECO && vol.status == "air" && vuDeco   -> "VALIDE deco"
+                mode == FollowMode.DECO && vol.status == "air"             -> "En l'air"
+                mode == FollowMode.DECO && vol.status == "down"            -> "POSE"
+                mode == FollowMode.DECO && vol.status == "xfer"            -> "Transfere"
+                mode == FollowMode.DECO && vol.status == "cancel"          -> "Annule"
+                mode == FollowMode.ATTERRO && vol.status == "air"          -> "En l'air"
+                mode == FollowMode.ATTERRO && vol.status == "down"         -> "Pose"
+                mode == FollowMode.ATTERRO && vol.status == "xfer"         -> "Transfere"
+                else                                                        -> vol.status
             }
             val statutColor = when {
-                mode == FollowMode.DECO && vol.status == "air" && vuDeco -> "#2E7D32"
-                mode == FollowMode.DECO && vol.status == "down"          -> "#2E7D32"
+                mode == FollowMode.DECO && vol.status == "air" && vuDeco   -> "#2E7D32"
+                mode == FollowMode.DECO && vol.status == "down"            -> "#2E7D32"
                 vol.status == "wait"   -> "#607D8B"
                 vol.status == "air"    -> "#1565C0"
                 vol.status == "down"   -> "#2E7D32"
@@ -67,18 +67,18 @@ class VolAdapter(
             tvStatut.text = statutLabel
             tvStatut.setBackgroundColor(Color.parseColor(statutColor))
 
-            // Exercices - utilise code + libelle retournes par API
+            // ── Exercices ────────────────────────────────────────────────────
             val exosValides = vol.exercices.filter { it.libelle.isNotBlank() }
             if (exosValides.isNotEmpty()) {
                 tvExos.visibility = View.VISIBLE
                 tvExos.text = exosValides.joinToString("\n") { exo ->
-                    if (exo.codeExo.isNotBlank()) "${exo.codeExo}  ${exo.libelle}"
-                    else exo.libelle
+                    "[${exo.categorie} ${exo.numero}] ${exo.libelle}"
                 }
             } else {
                 tvExos.visibility = View.GONE
             }
 
+            // ── Nb vols ──────────────────────────────────────────────────────
             if (vol.nbVols > 0) {
                 tvTime.visibility = View.VISIBLE
                 tvTime.text = "x${vol.nbVols}"
@@ -86,100 +86,117 @@ class VolAdapter(
                 tvTime.visibility = View.GONE
             }
 
-            val cardColor = when (vol.status) {
+            // ── Couleur carte ────────────────────────────────────────────────
+            cardView.setCardBackgroundColor(when (vol.status) {
                 "air"    -> if (vuDeco) Color.parseColor("#E8F5E9") else Color.parseColor("#E3F2FD")
                 "down"   -> Color.parseColor("#E8F5E9")
                 "cancel" -> Color.parseColor("#FFEBEE")
                 "xfer"   -> Color.parseColor("#F3E5F5")
                 else     -> Color.WHITE
-            }
-            cardView.setCardBackgroundColor(cardColor)
+            })
+
+            // ── Boutons ──────────────────────────────────────────────────────
+            // Cacher tout par defaut
+            btnPrimary.visibility   = View.GONE
+            btnSecondary.visibility = View.GONE
+            btnTertiary.visibility  = View.GONE
 
             when (mode) {
-                FollowMode.DECO -> {
-                    when (vol.status) {
-                        "wait" -> {
-                            btnPrimary.text = "Decollage"
-                            btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
-                            btnPrimary.setTextColor(Color.WHITE)
-                            btnPrimary.visibility = View.VISIBLE
-                            btnPrimary.isEnabled = true
-                            btnPrimary.setOnClickListener { onAction(vol, "decolle") }
-                            btnSecondary.text = "Annuler"
-                            btnSecondary.setBackgroundColor(Color.parseColor("#C62828"))
-                            btnSecondary.setTextColor(Color.WHITE)
-                            btnSecondary.visibility = View.VISIBLE
-                            btnSecondary.isEnabled = true
-                            btnSecondary.setOnClickListener { onAction(vol, "annule") }
-                        }
-                        "air" -> {
-                            btnPrimary.text = "Decollage"
-                            btnPrimary.setBackgroundColor(Color.parseColor("#B0BEC5"))
-                            btnPrimary.setTextColor(Color.parseColor("#78909C"))
-                            btnPrimary.visibility = View.VISIBLE
-                            btnPrimary.isEnabled = false
-                            btnPrimary.setOnClickListener(null)
-                            btnSecondary.text = "Annuler"
-                            btnSecondary.setBackgroundColor(Color.parseColor("#C62828"))
-                            btnSecondary.setTextColor(Color.WHITE)
-                            btnSecondary.visibility = View.VISIBLE
-                            btnSecondary.isEnabled = true
-                            btnSecondary.setOnClickListener { onAction(vol, "annule") }
-                        }
-                        "xfer" -> {
-                            btnPrimary.text = "Arrive au deco"
-                            btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
-                            btnPrimary.setTextColor(Color.WHITE)
-                            btnPrimary.visibility = View.VISIBLE
-                            btnPrimary.isEnabled = true
-                            btnPrimary.setOnClickListener { onAction(vol, "arrive_deco") }
-                            btnSecondary.text = "Annuler"
-                            btnSecondary.setBackgroundColor(Color.parseColor("#C62828"))
-                            btnSecondary.setTextColor(Color.WHITE)
-                            btnSecondary.visibility = View.VISIBLE
-                            btnSecondary.isEnabled = true
-                            btnSecondary.setOnClickListener { onAction(vol, "annule") }
-                        }
-                        else -> {
-                            btnPrimary.visibility = View.GONE
-                            btnSecondary.visibility = View.GONE
-                        }
+
+                // ── MODE DECO ────────────────────────────────────────────────
+                FollowMode.DECO -> when (vol.status) {
+                    "wait" -> {
+                        // Decollage bleu + Annuler rouge
+                        btnPrimary.text = "Decollage"
+                        btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
+                        btnPrimary.setTextColor(Color.WHITE)
+                        btnPrimary.isEnabled = true
+                        btnPrimary.visibility = View.VISIBLE
+                        btnPrimary.setOnClickListener { onAction(vol, "decolle") }
+
+                        btnSecondary.text = "Annuler"
+                        btnSecondary.setBackgroundColor(Color.parseColor("#C62828"))
+                        btnSecondary.setTextColor(Color.WHITE)
+                        btnSecondary.isEnabled = true
+                        btnSecondary.visibility = View.VISIBLE
+                        btnSecondary.setOnClickListener { onAction(vol, "annule") }
+                    }
+                    "air" -> {
+                        // Decollage grise + Annuler rouge
+                        btnPrimary.text = "Decollage"
+                        btnPrimary.setBackgroundColor(Color.parseColor("#B0BEC5"))
+                        btnPrimary.setTextColor(Color.parseColor("#78909C"))
+                        btnPrimary.isEnabled = false
+                        btnPrimary.visibility = View.VISIBLE
+                        btnPrimary.setOnClickListener(null)
+
+                        btnSecondary.text = "Annuler"
+                        btnSecondary.setBackgroundColor(Color.parseColor("#C62828"))
+                        btnSecondary.setTextColor(Color.WHITE)
+                        btnSecondary.isEnabled = true
+                        btnSecondary.visibility = View.VISIBLE
+                        btnSecondary.setOnClickListener { onAction(vol, "annule") }
+                    }
+                    "xfer" -> {
+                        // Arrive au deco + Annuler
+                        btnPrimary.text = "Arrive au deco"
+                        btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
+                        btnPrimary.setTextColor(Color.WHITE)
+                        btnPrimary.isEnabled = true
+                        btnPrimary.visibility = View.VISIBLE
+                        btnPrimary.setOnClickListener { onAction(vol, "arrive_deco") }
+
+                        btnSecondary.text = "Annuler"
+                        btnSecondary.setBackgroundColor(Color.parseColor("#C62828"))
+                        btnSecondary.setTextColor(Color.WHITE)
+                        btnSecondary.isEnabled = true
+                        btnSecondary.visibility = View.VISIBLE
+                        btnSecondary.setOnClickListener { onAction(vol, "annule") }
                     }
                 }
-                FollowMode.ATTERRO -> {
-                    when (vol.status) {
-                        "air" -> {
-                            btnPrimary.text = "Pose"
-                            btnPrimary.setBackgroundColor(Color.parseColor("#2E7D32"))
-                            btnPrimary.setTextColor(Color.WHITE)
-                            btnPrimary.visibility = View.VISIBLE
-                            btnPrimary.isEnabled = true
-                            btnPrimary.setOnClickListener { onAction(vol, "atterri") }
-                            btnSecondary.text = "Transfere"
-                            btnSecondary.setBackgroundColor(Color.parseColor("#9E9E9E"))
-                            btnSecondary.setTextColor(Color.WHITE)
-                            btnSecondary.visibility = View.VISIBLE
-                            btnSecondary.isEnabled = false
-                            btnSecondary.setOnClickListener(null)
+
+                // ── MODE ATTERRO ─────────────────────────────────────────────
+                FollowMode.ATTERRO -> when (vol.status) {
+                    "air" -> {
+                        // Vu deco (bleu) + Pose (vert) + Transfere (grise)
+                        if (!vuDeco) {
+                            btnTertiary.text = "Vu deco"
+                            btnTertiary.setBackgroundColor(Color.parseColor("#1565C0"))
+                            btnTertiary.setTextColor(Color.WHITE)
+                            btnTertiary.isEnabled = true
+                            btnTertiary.visibility = View.VISIBLE
+                            btnTertiary.setOnClickListener { onAction(vol, "attero_valide_deco") }
                         }
-                        "down" -> {
-                            btnPrimary.text = "Pose"
-                            btnPrimary.setBackgroundColor(Color.parseColor("#9E9E9E"))
-                            btnPrimary.setTextColor(Color.WHITE)
-                            btnPrimary.visibility = View.VISIBLE
-                            btnPrimary.isEnabled = false
-                            btnPrimary.setOnClickListener(null)
-                            btnSecondary.text = "Transfere"
-                            btnSecondary.setBackgroundColor(Color.parseColor("#6A1B9A"))
-                            btnSecondary.setTextColor(Color.WHITE)
-                            btnSecondary.visibility = View.VISIBLE
-                            btnSecondary.isEnabled = true
-                            btnSecondary.setOnClickListener { onAction(vol, "transfere") }
-                        }
-                        else -> {
-                            btnPrimary.visibility = View.GONE
-                            btnSecondary.visibility = View.GONE
-                        }
+
+                        btnPrimary.text = "Pose"
+                        btnPrimary.setBackgroundColor(Color.parseColor("#2E7D32"))
+                        btnPrimary.setTextColor(Color.WHITE)
+                        btnPrimary.isEnabled = true
+                        btnPrimary.visibility = View.VISIBLE
+                        btnPrimary.setOnClickListener { onAction(vol, "atterri") }
+
+                        btnSecondary.text = "Transfere"
+                        btnSecondary.setBackgroundColor(Color.parseColor("#9E9E9E"))
+                        btnSecondary.setTextColor(Color.WHITE)
+                        btnSecondary.isEnabled = false
+                        btnSecondary.visibility = View.VISIBLE
+                        btnSecondary.setOnClickListener(null)
+                    }
+                    "down" -> {
+                        // Pose grise + Transfere violet actif
+                        btnPrimary.text = "Pose"
+                        btnPrimary.setBackgroundColor(Color.parseColor("#9E9E9E"))
+                        btnPrimary.setTextColor(Color.WHITE)
+                        btnPrimary.isEnabled = false
+                        btnPrimary.visibility = View.VISIBLE
+                        btnPrimary.setOnClickListener(null)
+
+                        btnSecondary.text = "Transfere"
+                        btnSecondary.setBackgroundColor(Color.parseColor("#6A1B9A"))
+                        btnSecondary.setTextColor(Color.WHITE)
+                        btnSecondary.isEnabled = true
+                        btnSecondary.visibility = View.VISIBLE
+                        btnSecondary.setOnClickListener { onAction(vol, "transfere") }
                     }
                 }
             }
