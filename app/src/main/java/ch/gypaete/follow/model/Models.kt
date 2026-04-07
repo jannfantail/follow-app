@@ -13,27 +13,43 @@ data class ListResponse(
 
 // ── Vol (un élève dans la journée) ──────────────────────────────────────────
 data class Vol(
-    @SerializedName("vol_id")       val volId: Int,
+    @SerializedName("vol_id")        val volId: Int,
+    @SerializedName("journee_id")    val journeeId: Int,
     @SerializedName("utilisateur_id") val utilisateurId: Int,
-    val prenom: String,
-    val nom: String,
-    val statut: String,          // en_attente | decolle | atterri | annule
-    @SerializedName("decollage_at")     val decollageAt: String?,
-    @SerializedName("atterrissage_at")  val atterrissageAt: String?,
+    @SerializedName("nom")           val nomComplet: String,   // API retourne nom complet
+    @SerializedName("pseudo")        val pseudo: String?,
+    @SerializedName("status")        val status: String,       // wait | air | landed | cancelled
+    @SerializedName("last_event_type") val lastEventType: String?,
+    @SerializedName("nb_vols_follow") val nbVols: Int,
     val exercices: List<ExerciceAssigne> = emptyList()
 ) {
-    val nomComplet get() = "$prenom $nom"
-    val initiales get() = "${prenom.firstOrNull() ?: ""}${nom.firstOrNull() ?: ""}".uppercase()
+    // Compatibilité avec le reste du code
+    val statut get() = when (status) {
+        "wait"      -> "en_attente"
+        "air"       -> "decolle"
+        "landed"    -> "atterri"
+        "cancelled" -> "annule"
+        else        -> status
+    }
+
+    val prenom get() = nomComplet.split(" ").firstOrNull() ?: nomComplet
+    val nom get()    = nomComplet.split(" ").drop(1).joinToString(" ").ifEmpty { nomComplet }
+
+    val initiales get() = nomComplet
+        .split(" ")
+        .filter { it.isNotEmpty() }
+        .take(2)
+        .joinToString("") { it.first().uppercase() }
 }
 
 data class ExerciceAssigne(
     val id: Int,
     val libelle: String,
-    val categorie: String,
-    val numero: Int
+    val categorie: String = "",
+    val numero: Int = 0
 )
 
-// ── Exercices FSVL (pour la sélection au décollage) ─────────────────────────
+// ── Exercices FSVL ───────────────────────────────────────────────────────────
 data class ExercicesResponse(
     val ok: Boolean,
     val exercices: List<Exercice>
@@ -41,7 +57,7 @@ data class ExercicesResponse(
 
 data class Exercice(
     val id: Int,
-    val categorie: String,   // NF1 | NF2 | THEO
+    val categorie: String,
     val numero: Int,
     val libelle: String
 )
@@ -68,7 +84,6 @@ data class Event(
     @SerializedName("created_at") val createdAt: String
 )
 
-// ── Rooms ────────────────────────────────────────────────────────────────────
 data class Room(
     @SerializedName("room_code") val roomCode: Int,
     val libelle: String
