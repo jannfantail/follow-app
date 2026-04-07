@@ -33,7 +33,15 @@ class VolListFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
 
     private val mode: FollowMode
-        get() = arguments?.getSerializable(ARG_MODE) as? FollowMode ?: FollowMode.DECO
+        get() {
+            val arg = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                arguments?.getSerializable(ARG_MODE, FollowMode::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                arguments?.getSerializable(ARG_MODE) as? FollowMode
+            }
+            return arg ?: FollowMode.DECO
+        }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         inflater.inflate(R.layout.fragment_vol_list, container, false)
