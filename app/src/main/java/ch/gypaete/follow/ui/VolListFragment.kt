@@ -116,7 +116,7 @@ class VolListFragment : Fragment() {
 
         val labels = exos.map { exo ->
             val code = when {
-                exo.code.isNotBlank() -> exo.code
+                exo.codeExo.isNotBlank() -> exo.codeExo
                 exo.categorie.isNotBlank() -> "${exo.categorie} ${exo.numero}"
                 else -> ""
             }
