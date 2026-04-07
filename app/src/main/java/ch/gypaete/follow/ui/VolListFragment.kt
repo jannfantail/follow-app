@@ -115,7 +115,11 @@ class VolListFragment : Fragment() {
         if (exos.isEmpty()) { vm.decolle(vol, emptyList()); return }
 
         val labels = exos.map { exo ->
-            val code = exo.codeAffiche
+            val code = when {
+                exo.code.isNotBlank() -> exo.code
+                exo.categorie.isNotBlank() -> "${exo.categorie} ${exo.numero}"
+                else -> ""
+            }
             if (code.isNotBlank()) "$code  -  ${exo.libelle}" else exo.libelle
         }.toTypedArray()
         val checked = BooleanArray(exos.size) { false }
