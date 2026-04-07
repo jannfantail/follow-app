@@ -114,14 +114,7 @@ class VolListFragment : Fragment() {
         val exos = vm.exercices.value
         if (exos.isEmpty()) { vm.decolle(vol, emptyList()); return }
 
-        val labels = exos.map { exo ->
-            val code = when {
-                exo.codeExo.isNotBlank() -> exo.codeExo
-                exo.categorie.isNotBlank() -> "${exo.categorie} ${exo.numero}"
-                else -> ""
-            }
-            if (code.isNotBlank()) "$code  -  ${exo.libelle}" else exo.libelle
-        }.toTypedArray()
+        val labels = exos.map { "[${it.categorie} ${it.numero}] ${it.libelle}" }.toTypedArray()
         val checked = BooleanArray(exos.size) { false }
 
         MaterialAlertDialogBuilder(requireContext())
