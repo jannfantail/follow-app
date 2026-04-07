@@ -57,10 +57,18 @@ data class ExercicesResponse(
 
 data class Exercice(
     val id: Int,
-    val categorie: String,
-    val numero: Int,
-    val libelle: String
-)
+    val code: String = "",       // ex: "NF2 7"
+    val libelle: String = "",
+    val categorie: String = "",  // fallback si API envoie les deux
+    val numero: Int = 0
+) {
+    // Affichage unifie : "NF2 7" ou "NF2 7" depuis categorie+numero
+    val codeAffiche: String get() = when {
+        code.isNotBlank() -> code
+        categorie.isNotBlank() -> "$categorie $numero"
+        else -> ""
+    }
+}
 
 // ── Réponse POST actions ─────────────────────────────────────────────────────
 data class ActionResponse(
