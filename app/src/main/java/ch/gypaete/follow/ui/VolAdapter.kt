@@ -38,28 +38,29 @@ class VolAdapter(
             tvInitiales.text = vol.initiales
             tvNom.text = vol.nomComplet
 
-            val (statutLabel, statutColor) = when (vol.statut) {
-                "en_attente" -> "En attente" to "#607D8B"
-                "decolle"    -> "En l'air"   to "#1565C0"
-                "atterri"    -> "Pose"        to "#2E7D32"
-                "annule"     -> "Annule"      to "#B71C1C"
-                else         -> vol.statut    to "#757575"
+            // Statut badge
+            val (statutLabel, statutColor) = when (vol.status) {
+                "wait"   -> "En attente"  to "#607D8B"
+                "air"    -> "En l'air"   to "#1565C0"
+                "down"   -> "Pose"        to "#2E7D32"
+                "cancel" -> "Annule"      to "#B71C1C"
+                "xfer"   -> "Transfere"   to "#6A1B9A"
+                else     -> vol.status    to "#757575"
             }
             tvStatut.text = statutLabel
             tvStatut.setBackgroundColor(Color.parseColor(statutColor))
 
-            val exosValides = vol.exercices.filter {
-                it.libelle.isNotBlank() && it.libelle != "null" && it.categorie.isNotBlank()
-            }
-            if (exosValides.isNotEmpty()) {
+            // Exercices
+            if (vol.exercices.isNotEmpty()) {
                 tvExos.visibility = View.VISIBLE
-                tvExos.text = exosValides.joinToString("  ") {
-                    "[${it.categorie} ${it.numero}] ${it.libelle}"
+                tvExos.text = vol.exercices.joinToString(" - ") {
+                    "${it.categorie} ${it.numero}"
                 }
             } else {
                 tvExos.visibility = View.GONE
             }
 
+            // Heure (nb vols)
             if (vol.nbVols > 0) {
                 tvTime.visibility = View.VISIBLE
                 tvTime.text = "x${vol.nbVols}"
@@ -67,47 +68,42 @@ class VolAdapter(
                 tvTime.visibility = View.GONE
             }
 
-            cardView.setCardBackgroundColor(when (vol.statut) {
-                "decolle" -> Color.parseColor("#E3F2FD")
-                "atterri" -> Color.parseColor("#E8F5E9")
-                "annule"  -> Color.parseColor("#FFEBEE")
-                else      -> Color.WHITE
-            })
+            // Couleur carte
+            val cardColor = when (vol.status) {
+                "air"    -> Color.parseColor("#E3F2FD")
+                "down"   -> Color.parseColor("#E8F5E9")
+                "cancel" -> Color.parseColor("#FFEBEE")
+                "xfer"   -> Color.parseColor("#F3E5F5")
+                else     -> Color.WHITE
+            }
+            cardView.setCardBackgroundColor(cardColor)
 
-            val lastEvt = vol.lastEventType?.uppercase() ?: ""
+            // Boutons selon mode
             when (mode) {
-                FollowMode.DECO -> when {
-                    vol.status == "xfer" -> {
+                FollowMode.DECO -> {
+                    if (vol.status == "xfer") {
                         btnPrimary.text = "Arrive au deco"
                         btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
                         btnPrimary.visibility = View.VISIBLE
-                        btnPrimary.isEnabled = true
                         btnPrimary.setOnClickListener { onAction(vol, "arrive_deco") }
                         btnSecondary.text = "Annuler"
-                        btnSecondary.setBackgroundColor(Color.parseColor("#B71C1C"))
                         btnSecondary.visibility = View.VISIBLE
-                        btnSecondary.isEnabled = true
                         btnSecondary.setOnClickListener { onAction(vol, "annule") }
-                    }
-                    vol.statut == "en_attente" -> {
+                    } else if (vol.status == "wait") {
                         btnPrimary.text = "Decollage"
                         btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
                         btnPrimary.visibility = View.VISIBLE
-                        btnPrimary.isEnabled = true
                         btnPrimary.setOnClickListener { onAction(vol, "decolle") }
                         btnSecondary.text = "Annuler"
-                        btnSecondary.setBackgroundColor(Color.parseColor("#B71C1C"))
                         btnSecondary.visibility = View.VISIBLE
-                        btnSecondary.isEnabled = true
                         btnSecondary.setOnClickListener { onAction(vol, "annule") }
-                    }
-                    else -> {
+                    } else {
                         btnPrimary.visibility = View.GONE
                         btnSecondary.visibility = View.GONE
                     }
                 }
-                FollowMode.ATTERRO -> when {
-                    vol.statut == "decolle" -> {
+                FollowMode.ATTERRO -> {
+                    if (vol.status == "air") {
                         btnPrimary.text = "Pose"
                         btnPrimary.setBackgroundColor(Color.parseColor("#2E7D32"))
                         btnPrimary.visibility = View.VISIBLE
@@ -118,8 +114,7 @@ class VolAdapter(
                         btnSecondary.visibility = View.VISIBLE
                         btnSecondary.isEnabled = false
                         btnSecondary.setOnClickListener(null)
-                    }
-                    vol.statut == "atterri" -> {
+                    } else if (vol.status == "down") {
                         btnPrimary.text = "Pose"
                         btnPrimary.setBackgroundColor(Color.parseColor("#9E9E9E"))
                         btnPrimary.visibility = View.VISIBLE
@@ -130,8 +125,7 @@ class VolAdapter(
                         btnSecondary.visibility = View.VISIBLE
                         btnSecondary.isEnabled = true
                         btnSecondary.setOnClickListener { onAction(vol, "transfere") }
-                    }
-                    else -> {
+                    } else {
                         btnPrimary.visibility = View.GONE
                         btnSecondary.visibility = View.GONE
                     }
