@@ -88,16 +88,16 @@ class VolListFragment : Fragment() {
     }
 
     private fun filterVols(vols: List<Vol>, mode: FollowMode): List<Vol> = when (mode) {
-        FollowMode.DECO    -> vols.filter { it.statut in listOf("en_attente", "annule") }
-        FollowMode.ATTERRO -> vols.filter { it.statut == "decolle" }
+        FollowMode.DECO    -> vols.filter { it.status in listOf("wait", "xfer", "cancel") }
+        FollowMode.ATTERRO -> vols.filter { it.status in listOf("air", "down", "xfer") }
     }
 
     private fun handleAction(vol: Vol, action: String) {
         when (action) {
             "decolle"     -> showExercicesDialog(vol)
-            "atterri"     -> confirmAction("Poser ${vol.nomComplet} ?") { vm.atterri(vol) }
+            "atterri"     -> confirmAction("Poser ${vol.nomComplet} ?")    { vm.atterri(vol) }
             "annule"      -> confirmAction("Annuler vol de ${vol.nomComplet} ?") { vm.annule(vol) }
-            "transfere"   -> confirmAction("Transferer ${vol.nomComplet} ?") { vm.transfere(vol) }
+            "transfere"   -> confirmAction("Transferer ${vol.nomComplet} ?")  { vm.transfere(vol) }
             "arrive_deco" -> vm.arriveDeco(vol)
         }
     }
