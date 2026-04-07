@@ -44,7 +44,8 @@ data class Vol(
 
 data class ExerciceAssigne(
     val id: Int,
-    val libelle: String,
+    @com.google.gson.annotations.SerializedName("code") val codeExo: String = "",
+    val libelle: String = "",
     val categorie: String = "",
     val numero: Int = 0
 )
@@ -57,17 +58,10 @@ data class ExercicesResponse(
 
 data class Exercice(
     val id: Int,
-    val code: String = "",
-    val libelle: String = "",
-    val categorie: String = "",
-    val numero: Int = 0
-) {
-    val codeAffiche: String get() = when {
-        code.isNotBlank() -> code
-        categorie.isNotBlank() -> "$categorie $numero"
-        else -> ""
-    }
-}
+    val categorie: String,
+    val numero: Int,
+    val libelle: String
+)
 
 // ── Réponse POST actions ─────────────────────────────────────────────────────
 data class ActionResponse(
