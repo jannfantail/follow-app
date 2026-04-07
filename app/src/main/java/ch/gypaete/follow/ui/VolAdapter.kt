@@ -59,11 +59,14 @@ class VolAdapter(
             tvStatut.text = statutLabel
             tvStatut.setBackgroundColor(Color.parseColor(statutColor))
 
-            // Exercices
-            if (vol.exercices.isNotEmpty()) {
+            // Exercices - utilise code + libelle retournes par l'API
+            val exosValides = vol.exercices.filter { it.libelle.isNotBlank() }
+            if (exosValides.isNotEmpty()) {
                 tvExos.visibility = View.VISIBLE
-                tvExos.text = vol.exercices.joinToString(" - ") {
-                    "${it.categorie} ${it.numero}"
+                tvExos.text = exosValides.joinToString("
+") { exo ->
+                    if (exo.code.isNotBlank()) "${exo.code}  ${exo.libelle}"
+                    else exo.libelle
                 }
             } else {
                 tvExos.visibility = View.GONE
