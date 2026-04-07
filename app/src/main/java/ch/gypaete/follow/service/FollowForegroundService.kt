@@ -151,8 +151,17 @@ class FollowForegroundService : Service() {
             else   -> "Follow"
         }
 
-        SoundManager.play(this, "default")
-        NotificationHelper.send(this, title, message)
+        // Utiliser le son configure pour l'action correspondante
+        val actionKey = when (current) {
+            "air"  -> "decolle"
+            "down" -> "atterri"
+            "xfer" -> "transfere"
+            "wait" -> "arrive_deco"
+            else   -> "notification"
+        }
+        // Son + notification avec le son configure pour cette action
+        SoundManager.playForAction(this, actionKey)
+        NotificationHelper.send(this, title, message, actionKey)
     }
 
     private fun createChannel() {
