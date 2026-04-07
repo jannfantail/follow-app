@@ -57,12 +57,11 @@ data class ExercicesResponse(
 
 data class Exercice(
     val id: Int,
-    val code: String = "",       // ex: "NF2 7"
+    val code: String = "",
     val libelle: String = "",
-    val categorie: String = "",  // fallback si API envoie les deux
+    val categorie: String = "",
     val numero: Int = 0
 ) {
-    // Affichage unifie : "NF2 7" ou "NF2 7" depuis categorie+numero
     val codeAffiche: String get() = when {
         code.isNotBlank() -> code
         categorie.isNotBlank() -> "$categorie $numero"
