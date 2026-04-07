@@ -64,10 +64,11 @@ class FollowRepository {
     suspend fun transfere(volId: Int, utilisateurId: Int, room: Int): Result<ActionResponse> =
         postAction("transfere", volId, utilisateurId, room)
 
-    // ── Arrivée deco ─────────────────────────────────────────────────────
+    // ── Arrivee deco ─────────────────────────────────────────────────────
     suspend fun arriveDeco(volId: Int, utilisateurId: Int, room: Int): Result<ActionResponse> =
         postAction("arrive_deco", volId, utilisateurId, room)
 
+    // ── Atterro valide deco ───────────────────────────────────────────────
     suspend fun atteroValideDeco(volId: Int, utilisateurId: Int, room: Int): Result<ActionResponse> =
         postAction("attero_valide_deco", volId, utilisateurId, room)
 
