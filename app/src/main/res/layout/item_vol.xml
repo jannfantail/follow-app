@@ -71,7 +71,6 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#1565C0"
-                android:fontFamily="monospace"
                 android:visibility="gone"
                 android:text="09:34" />
 
