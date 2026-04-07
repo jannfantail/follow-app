@@ -64,7 +64,7 @@ class VolAdapter(
             if (exosValides.isNotEmpty()) {
                 tvExos.visibility = View.VISIBLE
                 tvExos.text = exosValides.joinToString("\n") { exo ->
-                    if (exo.code.isNotBlank()) "${exo.code}  ${exo.libelle}"
+                    if (exo.codeExo.isNotBlank()) "${exo.codeExo}  ${exo.libelle}"
                     else exo.libelle
                 }
             } else {
