@@ -16,14 +16,12 @@
         android:orientation="vertical"
         android:padding="14dp">
 
-        <!-- Ligne 1 : avatar + nom + statut + heure -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- Avatar initiales -->
             <TextView
                 android:id="@+id/tvInitiales"
                 android:layout_width="44dp"
@@ -35,7 +33,6 @@
                 android:background="@drawable/bg_avatar"
                 android:text="??" />
 
-            <!-- Nom + badge statut -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -66,7 +63,6 @@
 
             </LinearLayout>
 
-            <!-- Heure décollage -->
             <TextView
                 android:id="@+id/tvTime"
                 android:layout_width="wrap_content"
@@ -80,7 +76,6 @@
 
         </LinearLayout>
 
-        <!-- Exercices FSVL assignés -->
         <TextView
             android:id="@+id/tvExos"
             android:layout_width="match_parent"
@@ -94,7 +89,6 @@
             android:visibility="gone"
             android:text="NF2 5 • NF2 6" />
 
-        <!-- Boutons d'action -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -108,8 +102,8 @@
                 android:layout_height="44dp"
                 android:layout_marginEnd="8dp"
                 android:textSize="14sp"
-                android:textColor="#555"
-                android:background="@drawable/bg_btn_secondary"
+                android:textColor="#555555"
+                style="@style/Widget.AppCompat.Button.Borderless"
                 android:text="Annuler" />
 
             <Button
@@ -118,7 +112,7 @@
                 android:layout_height="44dp"
                 android:textSize="14sp"
                 android:textColor="#FFFFFF"
-                android:backgroundTint="@color/colorPrimary"
+                style="@style/Widget.AppCompat.Button.Colored"
                 android:text="Action" />
 
         </LinearLayout>
