@@ -19,13 +19,13 @@
         android:fontFamily="monospace"
         android:text="🔴 Connexion..." />
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="?attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:indeterminate="true"
-        android:visibility="gone" />
+   <ProgressBar
+    android:id="@+id/progressBar"
+    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="4dp"
+    android:indeterminate="true"
+    android:visibility="gone" />
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
