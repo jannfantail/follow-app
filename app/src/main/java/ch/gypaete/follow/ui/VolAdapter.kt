@@ -38,34 +38,28 @@ class VolAdapter(
             tvInitiales.text = vol.initiales
             tvNom.text = vol.nomComplet
 
-            val statutUI = when (vol.lastEventType?.uppercase()) {
-                "TRANSFERE"          -> "transfere"
-                "ARRIVEE_DECO"       -> "arrive_deco"
-                "ATTERO_VALIDE_DECO" -> "arrive_deco"
-                else                  -> vol.statut
-            }
-
-            val (statutLabel, statutColor) = when (statutUI) {
-                "en_attente"  -> "En attente" to "#607D8B"
-                "decolle"     -> "En l'air"   to "#1565C0"
-                "atterri"     -> "Pose"        to "#2E7D32"
-                "annule"      -> "Annule"      to "#B71C1C"
-                "transfere"   -> "Transfere"   to "#6A1B9A"
-                "arrive_deco" -> "Au deco"     to "#E65100"
-                else            -> statutUI       to "#757575"
+            // Statut badge
+            val (statutLabel, statutColor) = when (vol.statut) {
+                "en_attente" -> "En attente" to "#607D8B"
+                "decolle"    -> "En l'air"   to "#1565C0"
+                "atterri"    -> "Pose"        to "#2E7D32"
+                "annule"     -> "Annule"      to "#B71C1C"
+                else         -> vol.statut    to "#757575"
             }
             tvStatut.text = statutLabel
             tvStatut.setBackgroundColor(Color.parseColor(statutColor))
 
+            // Exercices
             if (vol.exercices.isNotEmpty()) {
                 tvExos.visibility = View.VISIBLE
-                tvExos.text = vol.exercices.joinToString("  ") {
-                    "[${it.categorie} ${it.numero}] ${it.libelle}"
+                tvExos.text = vol.exercices.joinToString(" - ") {
+                    "${it.categorie} ${it.numero}"
                 }
             } else {
                 tvExos.visibility = View.GONE
             }
 
+            // Heure (nb vols)
             if (vol.nbVols > 0) {
                 tvTime.visibility = View.VISIBLE
                 tvTime.text = "x${vol.nbVols}"
@@ -73,36 +67,35 @@ class VolAdapter(
                 tvTime.visibility = View.GONE
             }
 
-            cardView.setCardBackgroundColor(when (statutUI) {
-                "decolle"     -> Color.parseColor("#E3F2FD")
-                "atterri"     -> Color.parseColor("#E8F5E9")
-                "annule"      -> Color.parseColor("#FFEBEE")
-                "transfere"   -> Color.parseColor("#F3E5F5")
-                "arrive_deco" -> Color.parseColor("#FFF3E0")
-                else           -> Color.WHITE
-            })
+            // Couleur carte
+            val cardColor = when (vol.statut) {
+                "decolle" -> Color.parseColor("#E3F2FD")
+                "atterri" -> Color.parseColor("#E8F5E9")
+                "annule"  -> Color.parseColor("#FFEBEE")
+                else      -> Color.WHITE
+            }
+            cardView.setCardBackgroundColor(cardColor)
 
+            // Boutons selon mode
             when (mode) {
                 FollowMode.DECO -> {
-                    val show = vol.statut == "en_attente"
-                    btnPrimary.visibility   = if (show) View.VISIBLE else View.GONE
-                    btnSecondary.visibility = if (show) View.VISIBLE else View.GONE
                     btnPrimary.text = "Decollage"
                     btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
+                    btnPrimary.visibility = if (vol.statut == "en_attente") View.VISIBLE else View.GONE
+                    btnPrimary.setOnClickListener { onAction(vol, "decolle") }
+
                     btnSecondary.text = "Annuler"
-                    btnSecondary.setBackgroundColor(Color.parseColor("#B71C1C"))
-                    btnPrimary.setOnClickListener   { onAction(vol, "decolle") }
+                    btnSecondary.visibility = if (vol.statut == "en_attente") View.VISIBLE else View.GONE
                     btnSecondary.setOnClickListener { onAction(vol, "annule") }
                 }
                 FollowMode.ATTERRO -> {
-                    val enAir = vol.statut == "decolle"
-                    btnPrimary.visibility   = if (enAir) View.VISIBLE else View.GONE
-                    btnSecondary.visibility = if (enAir) View.VISIBLE else View.GONE
                     btnPrimary.text = "Pose"
                     btnPrimary.setBackgroundColor(Color.parseColor("#2E7D32"))
+                    btnPrimary.visibility = if (vol.statut == "decolle") View.VISIBLE else View.GONE
+                    btnPrimary.setOnClickListener { onAction(vol, "atterri") }
+
                     btnSecondary.text = "Transfere"
-                    btnSecondary.setBackgroundColor(Color.parseColor("#6A1B9A"))
-                    btnPrimary.setOnClickListener   { onAction(vol, "atterri") }
+                    btnSecondary.visibility = if (vol.statut == "decolle") View.VISIBLE else View.GONE
                     btnSecondary.setOnClickListener { onAction(vol, "transfere") }
                 }
             }
@@ -110,7 +103,7 @@ class VolAdapter(
     }
 
     class VolDiffCallback : DiffUtil.ItemCallback<Vol>() {
-        override fun areItemsTheSame(o: Vol, n: Vol) = o.volId == n.volId
-        override fun areContentsTheSame(o: Vol, n: Vol) = o == n
+        override fun areItemsTheSame(oldItem: Vol, newItem: Vol) = oldItem.volId == newItem.volId
+        override fun areContentsTheSame(oldItem: Vol, newItem: Vol) = oldItem == newItem
     }
 }
