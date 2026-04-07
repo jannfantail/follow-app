@@ -89,7 +89,7 @@ class VolListFragment : Fragment() {
 
     private fun filterVols(vols: List<Vol>, mode: FollowMode): List<Vol> = when (mode) {
         FollowMode.DECO    -> vols.filter { it.status in listOf("wait", "xfer", "cancel") }
-        FollowMode.ATTERRO -> vols.filter { it.status in listOf("air", "down", "xfer") }
+        FollowMode.ATTERRO -> vols.filter { it.status in listOf("air", "down") }
     }
 
     private fun handleAction(vol: Vol, action: String) {
