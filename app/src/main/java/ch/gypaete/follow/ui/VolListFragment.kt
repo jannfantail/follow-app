@@ -94,11 +94,12 @@ class VolListFragment : Fragment() {
 
     private fun handleAction(vol: Vol, action: String) {
         when (action) {
-            "decolle"     -> showExercicesDialog(vol)
-            "atterri"     -> confirmAction("Poser ${vol.nomComplet} ?")    { vm.atterri(vol) }
-            "annule"      -> confirmAction("Annuler vol de ${vol.nomComplet} ?") { vm.annule(vol) }
-            "transfere"   -> confirmAction("Transferer ${vol.nomComplet} ?")  { vm.transfere(vol) }
-            "arrive_deco" -> vm.arriveDeco(vol)
+            "decolle"            -> showExercicesDialog(vol)
+            "atterri"            -> confirmAction("Poser ${vol.nomComplet} ?") { vm.atterri(vol) }
+            "annule"             -> confirmAction("Annuler vol de ${vol.nomComplet} ?") { vm.annule(vol) }
+            "transfere"          -> confirmAction("Transferer ${vol.nomComplet} ?") { vm.transfere(vol) }
+            "arrive_deco"        -> vm.arriveDeco(vol)
+            "attero_valide_deco" -> vm.atteroValideDeco(vol)
         }
     }
 
