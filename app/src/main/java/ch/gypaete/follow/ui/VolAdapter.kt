@@ -197,6 +197,22 @@ class VolAdapter(
                         btnSecondary.isEnabled = true
                         btnSecondary.visibility = View.VISIBLE
                         btnSecondary.setOnClickListener { onAction(vol, "transfere") }
+                        }
+                        "xfer" -> {
+                            // Transfere : en attente arrivee deco - tous desactives
+                            btnPrimary.text = "Pose"
+                            btnPrimary.setBackgroundColor(Color.parseColor("#9E9E9E"))
+                            btnPrimary.setTextColor(Color.WHITE)
+                            btnPrimary.visibility = View.VISIBLE
+                            btnPrimary.isEnabled = false
+                            btnPrimary.setOnClickListener(null)
+                            btnSecondary.text = "Transfere"
+                            btnSecondary.setBackgroundColor(Color.parseColor("#9E9E9E"))
+                            btnSecondary.setTextColor(Color.WHITE)
+                            btnSecondary.visibility = View.VISIBLE
+                            btnSecondary.isEnabled = false
+                            btnSecondary.setOnClickListener(null)
+                        }
                     }
                 }
             }
