@@ -197,8 +197,9 @@ class VolAdapter(
                         btnSecondary.isEnabled = true
                         btnSecondary.visibility = View.VISIBLE
                         btnSecondary.setOnClickListener { onAction(vol, "transfere") }
-                        }
-                        "xfer" -> {
+                    }
+                    "xfer" -> {
+                        // Transfere : en attente arrivee deco - tous desactives
                             // Transfere : en attente arrivee deco - tous desactives
                             btnPrimary.text = "Pose"
                             btnPrimary.setBackgroundColor(Color.parseColor("#9E9E9E"))
