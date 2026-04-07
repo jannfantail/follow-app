@@ -34,13 +34,12 @@ class VolListFragment : Fragment() {
 
     private val mode: FollowMode
         get() {
-            val arg = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            return if (android.os.Build.VERSION.SDK_INT >= 33) {
                 arguments?.getSerializable(ARG_MODE, FollowMode::class.java)
             } else {
                 @Suppress("DEPRECATION")
                 arguments?.getSerializable(ARG_MODE) as? FollowMode
-            }
-            return arg ?: FollowMode.DECO
+            } ?: FollowMode.DECO
         }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
@@ -96,9 +95,9 @@ class VolListFragment : Fragment() {
     private fun handleAction(vol: Vol, action: String) {
         when (action) {
             "decolle"     -> showExercicesDialog(vol)
-            "atterri"     -> confirmAction("Poser ${vol.nomComplet} ?")    { vm.atterri(vol) }
+            "atterri"     -> confirmAction("Poser ${vol.nomComplet} ?") { vm.atterri(vol) }
             "annule"      -> confirmAction("Annuler vol de ${vol.nomComplet} ?") { vm.annule(vol) }
-            "transfere"   -> confirmAction("Transferer ${vol.nomComplet} ?")  { vm.transfere(vol) }
+            "transfere"   -> confirmAction("Transferer ${vol.nomComplet} ?") { vm.transfere(vol) }
             "arrive_deco" -> vm.arriveDeco(vol)
         }
     }
