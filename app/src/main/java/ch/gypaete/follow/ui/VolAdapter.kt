@@ -40,21 +40,29 @@ class VolAdapter(
 
             val vuDeco = vol.lastEventType?.uppercase() == "ATTERO_VALIDE_DECO"
 
-            val statutLabel = when (vol.status) {
-                "wait"   -> "En attente"
-                "air"    -> if (vuDeco) "VALIDE" else "En l’air"
-                "down"   -> "Pose"
-                "cancel" -> "Annule"
-                "xfer"   -> "Transfere"
-                else     -> vol.status
+            val statutLabel = when {
+                // MODE DECO : info venant de atterro
+                mode == FollowMode.DECO && vol.status == "wait"   -> "En attente"
+                mode == FollowMode.DECO && vol.status == "air" && vuDeco -> "VALIDE deco"
+                mode == FollowMode.DECO && vol.status == "air"    -> "En l'air"
+                mode == FollowMode.DECO && vol.status == "down"   -> "POSE"
+                mode == FollowMode.DECO && vol.status == "xfer"   -> "Transfere"
+                mode == FollowMode.DECO && vol.status == "cancel" -> "Annule"
+                // MODE ATTERRO : info venant du deco
+                mode == FollowMode.ATTERRO && vol.status == "air"  -> "En l'air"
+                mode == FollowMode.ATTERRO && vol.status == "down" -> "Pose"
+                mode == FollowMode.ATTERRO && vol.status == "xfer" -> "Transfere"
+                else -> vol.status
             }
-            val statutColor = when (vol.status) {
-                "wait"   -> "#607D8B"
-                "air"    -> if (vuDeco) "#2E7D32" else "#1565C0"
-                "down"   -> "#2E7D32"
-                "cancel" -> "#B71C1C"
-                "xfer"   -> "#6A1B9A"
-                else     -> "#757575"
+            val statutColor = when {
+                mode == FollowMode.DECO && vol.status == "air" && vuDeco -> "#2E7D32"
+                mode == FollowMode.DECO && vol.status == "down"          -> "#2E7D32"
+                vol.status == "wait"   -> "#607D8B"
+                vol.status == "air"    -> "#1565C0"
+                vol.status == "down"   -> "#2E7D32"
+                vol.status == "cancel" -> "#B71C1C"
+                vol.status == "xfer"   -> "#6A1B9A"
+                else                   -> "#757575"
             }
             tvStatut.text = statutLabel
             tvStatut.setBackgroundColor(Color.parseColor(statutColor))
