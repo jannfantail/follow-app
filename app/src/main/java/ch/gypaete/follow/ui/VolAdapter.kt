@@ -1,159 +1,132 @@
 package ch.gypaete.follow.ui
 
-import android.graphics.Color
+import android.os.Bundle
 import android.view.*
 import android.widget.*
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
+import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import ch.gypaete.follow.R
 import ch.gypaete.follow.model.Vol
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
-class VolAdapter(
-    private val mode: FollowMode,
-    private val onAction: (Vol, String) -> Unit
-) : ListAdapter<Vol, VolAdapter.VolViewHolder>(VolDiffCallback()) {
+class VolListFragment : Fragment() {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VolViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_vol, parent, false)
-        return VolViewHolder(view)
+    companion object {
+        private const val ARG_MODE = "mode"
+        fun newInstance(mode: FollowMode) = VolListFragment().apply {
+            arguments = Bundle().apply { putSerializable(ARG_MODE, mode) }
+        }
     }
 
-    override fun onBindViewHolder(holder: VolViewHolder, position: Int) {
-        holder.bind(getItem(position), mode, onAction)
-    }
+    private val vm: FollowViewModel by activityViewModels()
+    private lateinit var adapter: VolAdapter
+    private lateinit var rvVols: RecyclerView
+    private lateinit var tvEmpty: TextView
+    private lateinit var tvStatus: TextView
+    private lateinit var progressBar: ProgressBar
 
-    class VolViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-
-        private val tvInitiales  = itemView.findViewById<TextView>(R.id.tvInitiales)
-        private val tvNom        = itemView.findViewById<TextView>(R.id.tvNom)
-        private val tvStatut     = itemView.findViewById<TextView>(R.id.tvStatut)
-        private val tvExos       = itemView.findViewById<TextView>(R.id.tvExos)
-        private val tvTime       = itemView.findViewById<TextView>(R.id.tvTime)
-        private val btnPrimary   = itemView.findViewById<Button>(R.id.btnPrimary)
-        private val btnSecondary = itemView.findViewById<Button>(R.id.btnSecondary)
-        private val cardView     = itemView.findViewById<androidx.cardview.widget.CardView>(R.id.cardView)
-
-        fun bind(vol: Vol, mode: FollowMode, onAction: (Vol, String) -> Unit) {
-            tvInitiales.text = vol.initiales
-            tvNom.text = vol.nomComplet
-
-            // Statut badge
-            val (statutLabel, statutColor) = when (vol.statut) {
-                "en_attente" -> "En attente" to "#607D8B"
-                "decolle"    -> "En l'air"   to "#1565C0"
-                "atterri"    -> "Pose"        to "#2E7D32"
-                "annule"     -> "Annule"      to "#B71C1C"
-                else         -> vol.statut    to "#757575"
-            }
-            tvStatut.text = statutLabel
-            tvStatut.setBackgroundColor(Color.parseColor(statutColor))
-
-            // Exercices - filtrer null/vides
-            val exosValides = vol.exercices.filter {
-                it.libelle.isNotBlank() && it.libelle != "null" && it.categorie.isNotBlank()
-            }
-            if (exosValides.isNotEmpty()) {
-                tvExos.visibility = View.VISIBLE
-                tvExos.text = exosValides.joinToString("  ") {
-                    "[${it.categorie} ${it.numero}] ${it.libelle}"
-                }
+    private val mode: FollowMode
+        get() {
+            val arg = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                arguments?.getSerializable(ARG_MODE, FollowMode::class.java)
             } else {
-                tvExos.visibility = View.GONE
+                @Suppress("DEPRECATION")
+                arguments?.getSerializable(ARG_MODE) as? FollowMode
+            }
+            return arg ?: FollowMode.DECO
+        }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
+        inflater.inflate(R.layout.fragment_vol_list, container, false)
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        rvVols      = view.findViewById(R.id.rvVols)
+        tvEmpty     = view.findViewById(R.id.tvEmpty)
+        tvStatus    = view.findViewById(R.id.tvStatus)
+        progressBar = view.findViewById(R.id.progressBar)
+
+        adapter = VolAdapter(mode) { vol, action -> handleAction(vol, action) }
+        rvVols.layoutManager = LinearLayoutManager(requireContext())
+        rvVols.adapter = adapter
+
+        view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefresh)
+            ?.setOnRefreshListener {
+                vm.refresh()
+                view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefresh)
+                    ?.isRefreshing = false
             }
 
-            // Heure (nb vols)
-            if (vol.nbVols > 0) {
-                tvTime.visibility = View.VISIBLE
-                tvTime.text = "x${vol.nbVols}"
-            } else {
-                tvTime.visibility = View.GONE
-            }
+        lifecycleScope.launch {
+            vm.uiState.collect { state ->
+                progressBar.isVisible = state.status == UiStatus.LOADING
 
-            // Couleur carte
-            val cardColor = when (vol.statut) {
-                "decolle" -> Color.parseColor("#E3F2FD")
-                "atterri" -> Color.parseColor("#E8F5E9")
-                "annule"  -> Color.parseColor("#FFEBEE")
-                else      -> Color.WHITE
-            }
-            cardView.setCardBackgroundColor(cardColor)
+                val filtered = filterVols(state.vols, mode)
+                adapter.submitList(filtered)
+                tvEmpty.isVisible = filtered.isEmpty() && state.status != UiStatus.LOADING
 
-            // Boutons selon mode
-            val lastEvt = vol.lastEventType?.uppercase() ?: ""
-            when (mode) {
+                val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                val refreshStr = if (state.lastRefresh > 0) timeFmt.format(state.lastRefresh) else "--:--"
+                val liveIcon = if (state.isLive) "LIVE" else "HORS LIGNE"
+                val countInAir = state.vols.count { it.statut == "decolle" }
+                tvStatus.text = "$liveIcon  |  En l'air : $countInAir  |  $refreshStr"
 
-                FollowMode.DECO -> when {
-                    // Transfere => Arrive au deco
-                    vol.status == "xfer" -> {
-                        btnPrimary.text = "Arrive au deco"
-                        btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
-                        btnPrimary.visibility = View.VISIBLE
-                        btnPrimary.isEnabled = true
-                        btnPrimary.setOnClickListener { onAction(vol, "arrive_deco") }
-                        btnSecondary.text = "Annuler"
-                        btnSecondary.setBackgroundColor(Color.parseColor("#B71C1C"))
-                        btnSecondary.visibility = View.VISIBLE
-                        btnSecondary.isEnabled = true
-                        btnSecondary.setOnClickListener { onAction(vol, "annule") }
-                    }
-                    // En attente => Decollage + Annuler
-                    vol.statut == "en_attente" -> {
-                        btnPrimary.text = "Decollage"
-                        btnPrimary.setBackgroundColor(Color.parseColor("#1565C0"))
-                        btnPrimary.visibility = View.VISIBLE
-                        btnPrimary.isEnabled = true
-                        btnPrimary.setOnClickListener { onAction(vol, "decolle") }
-                        btnSecondary.text = "Annuler"
-                        btnSecondary.setBackgroundColor(Color.parseColor("#B71C1C"))
-                        btnSecondary.visibility = View.VISIBLE
-                        btnSecondary.isEnabled = true
-                        btnSecondary.setOnClickListener { onAction(vol, "annule") }
-                    }
-                    else -> {
-                        btnPrimary.visibility = View.GONE
-                        btnSecondary.visibility = View.GONE
-                    }
-                }
-
-                FollowMode.ATTERRO -> when {
-                    // En l'air => Pose actif + Transfere desactive
-                    vol.statut == "decolle" -> {
-                        btnPrimary.text = "Pose"
-                        btnPrimary.setBackgroundColor(Color.parseColor("#2E7D32"))
-                        btnPrimary.visibility = View.VISIBLE
-                        btnPrimary.isEnabled = true
-                        btnPrimary.setOnClickListener { onAction(vol, "atterri") }
-                        btnSecondary.text = "Transfere"
-                        btnSecondary.setBackgroundColor(Color.parseColor("#9E9E9E"))
-                        btnSecondary.visibility = View.VISIBLE
-                        btnSecondary.isEnabled = false
-                        btnSecondary.setOnClickListener(null)
-                    }
-                    // Pose => Transfere actif
-                    vol.statut == "atterri" -> {
-                        btnPrimary.text = "Pose"
-                        btnPrimary.setBackgroundColor(Color.parseColor("#9E9E9E"))
-                        btnPrimary.visibility = View.VISIBLE
-                        btnPrimary.isEnabled = false
-                        btnPrimary.setOnClickListener(null)
-                        btnSecondary.text = "Transfere"
-                        btnSecondary.setBackgroundColor(Color.parseColor("#6A1B9A"))
-                        btnSecondary.visibility = View.VISIBLE
-                        btnSecondary.isEnabled = true
-                        btnSecondary.setOnClickListener { onAction(vol, "transfere") }
-                    }
-                    else -> {
-                        btnPrimary.visibility = View.GONE
-                        btnSecondary.visibility = View.GONE
-                    }
+                tvEmpty.text = when {
+                    state.status == UiStatus.ERROR -> "Erreur : ${state.errorMsg}\n\nTirer pour reessayer"
+                    mode == FollowMode.DECO        -> "Aucun eleve en attente au deco"
+                    else                           -> "Personne en l'air"
                 }
             }
         }
     }
 
-    class VolDiffCallback : DiffUtil.ItemCallback<Vol>() {
-        override fun areItemsTheSame(oldItem: Vol, newItem: Vol) = oldItem.volId == newItem.volId
-        override fun areContentsTheSame(oldItem: Vol, newItem: Vol) = oldItem == newItem
+    private fun filterVols(vols: List<Vol>, mode: FollowMode): List<Vol> = when (mode) {
+        FollowMode.DECO    -> vols.filter { it.statut in listOf("en_attente", "annule") }
+        FollowMode.ATTERRO -> vols.filter { it.statut == "decolle" }
+    }
+
+    private fun handleAction(vol: Vol, action: String) {
+        when (action) {
+            "decolle"     -> showExercicesDialog(vol)
+            "atterri"     -> confirmAction("Poser ${vol.nomComplet} ?")    { vm.atterri(vol) }
+            "annule"      -> confirmAction("Annuler vol de ${vol.nomComplet} ?") { vm.annule(vol) }
+            "transfere"   -> confirmAction("Transferer ${vol.nomComplet} ?")  { vm.transfere(vol) }
+            "arrive_deco" -> vm.arriveDeco(vol)
+        }
+    }
+
+    private fun confirmAction(msg: String, onConfirm: () -> Unit) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setMessage(msg)
+            .setPositiveButton("Confirmer") { _, _ -> onConfirm() }
+            .setNegativeButton("Annuler", null)
+            .show()
+    }
+
+    private fun showExercicesDialog(vol: Vol) {
+        val exos = vm.exercices.value
+        if (exos.isEmpty()) { vm.decolle(vol, emptyList()); return }
+
+        val labels  = exos.map { "[${it.categorie} ${it.numero}] ${it.libelle}" }.toTypedArray()
+        val checked = BooleanArray(exos.size) { false }
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Exercices FSVL — ${vol.nomComplet}")
+            .setMultiChoiceItems(labels, checked) { _, which, isChecked -> checked[which] = isChecked }
+            .setPositiveButton("Decollage") { _, _ ->
+                val ids = exos.filterIndexed { i, _ -> checked[i] }.map { it.id }
+                vm.decolle(vol, ids)
+            }
+            .setNeutralButton("Sans exercice") { _, _ -> vm.decolle(vol, emptyList()) }
+            .setNegativeButton("Annuler", null)
+            .show()
     }
 }
