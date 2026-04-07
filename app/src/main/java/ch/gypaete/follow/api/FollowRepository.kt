@@ -68,6 +68,9 @@ class FollowRepository {
     suspend fun arriveDeco(volId: Int, utilisateurId: Int, room: Int): Result<ActionResponse> =
         postAction("arrive_deco", volId, utilisateurId, room)
 
+    suspend fun atteroValideDeco(volId: Int, utilisateurId: Int, room: Int): Result<ActionResponse> =
+        postAction("attero_valide_deco", volId, utilisateurId, room)
+
     private suspend fun postAction(
         action: String,
         volId: Int,
