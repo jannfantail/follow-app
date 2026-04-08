@@ -21,6 +21,13 @@ class FollowRepository {
         resp.body() ?: error("Réponse vide")
     }
 
+    // ── Rooms ────────────────────────────────────────────────────────────
+    suspend fun fetchRooms(): Result<List<Room>> = runCatching {
+        val resp = api.listRooms()
+        if (!resp.isSuccessful) error("HTTP ${resp.code()}")
+        resp.body()?.rooms ?: listOf(Room(roomCode = 1, libelle = "Room 1"))
+    }
+
     // ── Exercices FSVL ────────────────────────────────────────────────────
     suspend fun fetchExercices(): Result<List<Exercice>> = runCatching {
         val resp = api.listExercices()
@@ -64,13 +71,9 @@ class FollowRepository {
     suspend fun transfere(volId: Int, utilisateurId: Int, room: Int): Result<ActionResponse> =
         postAction("transfere", volId, utilisateurId, room)
 
-    // ── Arrivee deco ─────────────────────────────────────────────────────
+    // ── Arrivée deco ─────────────────────────────────────────────────────
     suspend fun arriveDeco(volId: Int, utilisateurId: Int, room: Int): Result<ActionResponse> =
         postAction("arrive_deco", volId, utilisateurId, room)
-
-    // ── Atterro valide deco ───────────────────────────────────────────────
-    suspend fun atteroValideDeco(volId: Int, utilisateurId: Int, room: Int): Result<ActionResponse> =
-        postAction("attero_valide_deco", volId, utilisateurId, room)
 
     private suspend fun postAction(
         action: String,
