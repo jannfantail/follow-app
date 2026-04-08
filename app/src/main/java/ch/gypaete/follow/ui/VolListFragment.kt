@@ -145,21 +145,168 @@ class VolListFragment : Fragment() {
     }
 
     private fun showExercicesDialog(vol: Vol) {
-        val exos = vm.exercices.value
+        val exos = vm.exercices.value.filter { it.libelle.isNotBlank() }
         if (exos.isEmpty()) { vm.decolle(vol, emptyList()); return }
 
-        val labels = exos.map { it.libelle.ifBlank { "Exercice" } }.toTypedArray()
         val checked = BooleanArray(exos.size) { false }
+        val ctx = requireContext()
 
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Exercices FSVL - ${vol.nomComplet}")
-            .setMultiChoiceItems(labels, checked) { _, which, isChecked -> checked[which] = isChecked }
-            .setPositiveButton("Decollage") { _, _ ->
+        // ── Layout principal ─────────────────────────────────────────────
+        val root = android.widget.LinearLayout(ctx).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setBackgroundColor(android.graphics.Color.WHITE)
+        }
+
+        // ── En-tete ──────────────────────────────────────────────────────
+        val header = android.widget.LinearLayout(ctx).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setBackgroundColor(android.graphics.Color.parseColor("#1A237E"))
+            setPadding(48, 40, 48, 32)
+        }
+        header.addView(android.widget.TextView(ctx).apply {
+            text = "Exercices FSVL"
+            textSize = 13f
+            setTextColor(android.graphics.Color.parseColor("#90CAF9"))
+            letterSpacing = 0.12f
+        })
+        header.addView(android.widget.TextView(ctx).apply {
+            text = vol.nomComplet
+            textSize = 20f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(android.graphics.Color.WHITE)
+            setPadding(0, 4, 0, 0)
+        })
+        root.addView(header)
+
+        // ── Liste scrollable ─────────────────────────────────────────────
+        val scroll = android.widget.ScrollView(ctx).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                0).apply { weight = 1f }
+        }
+        val list = android.widget.LinearLayout(ctx).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(0, 8, 0, 8)
+        }
+
+        val checkBoxes = mutableListOf<android.widget.CheckBox>()
+        exos.forEachIndexed { i, exo ->
+            val row = android.widget.LinearLayout(ctx).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(16, 0, 16, 0)
+                setBackgroundColor(
+                    if (i % 2 == 0) android.graphics.Color.WHITE
+                    else android.graphics.Color.parseColor("#F8F9FF")
+                )
+            }
+            // Numero
+            val tvNum = android.widget.TextView(ctx).apply {
+                text = "${i + 1}"
+                textSize = 13f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(android.graphics.Color.parseColor("#1565C0"))
+                width = 60
+                gravity = android.view.Gravity.CENTER
+            }
+            // Checkbox + label
+            val cb = android.widget.CheckBox(ctx).apply {
+                text = exo.libelle
+                textSize = 15f
+                setTextColor(android.graphics.Color.parseColor("#1A1A2E"))
+                setPadding(8, 20, 16, 20)
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                setOnCheckedChangeListener { _, isChecked ->
+                    checked[i] = isChecked
+                    row.setBackgroundColor(
+                        if (isChecked) android.graphics.Color.parseColor("#E3F2FD")
+                        else if (i % 2 == 0) android.graphics.Color.WHITE
+                        else android.graphics.Color.parseColor("#F8F9FF")
+                    )
+                }
+            }
+            checkBoxes.add(cb)
+            row.addView(tvNum)
+            row.addView(cb)
+            list.addView(row)
+        }
+        scroll.addView(list)
+        root.addView(scroll)
+
+        // ── Compteur selection ───────────────────────────────────────────
+        val tvCount = android.widget.TextView(ctx).apply {
+            text = "Aucun exercice selectionne"
+            textSize = 12f
+            setTextColor(android.graphics.Color.parseColor("#607D8B"))
+            gravity = android.view.Gravity.CENTER
+            setPadding(16, 12, 16, 8)
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+        }
+        // Mettre a jour le compteur quand on coche
+        checkBoxes.forEachIndexed { i, cb ->
+            cb.setOnCheckedChangeListener { _, isChecked ->
+                checked[i] = isChecked
+                val n = checked.count { it }
+                tvCount.text = if (n == 0) "Aucun exercice selectionne"
+                               else "$n exercice(s) selectionne(s)"
+                val row = list.getChildAt(i) as android.widget.LinearLayout
+                row.setBackgroundColor(
+                    if (isChecked) android.graphics.Color.parseColor("#E3F2FD")
+                    else if (i % 2 == 0) android.graphics.Color.WHITE
+                    else android.graphics.Color.parseColor("#F8F9FF")
+                )
+            }
+        }
+        root.addView(tvCount)
+
+        // ── Boutons ──────────────────────────────────────────────────────
+        val btnRow = android.widget.LinearLayout(ctx).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            weightSum = 3f
+            setPadding(12, 12, 12, 16)
+            setBackgroundColor(android.graphics.Color.WHITE)
+        }
+
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(ctx)
+            .setView(root).create()
+
+        btnRow.addView(android.widget.Button(ctx).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                0, 108, 1f).apply { marginEnd = 6 }
+            text = "Annuler"
+            textSize = 13f
+            setBackgroundColor(android.graphics.Color.parseColor("#EEEEEE"))
+            setTextColor(android.graphics.Color.parseColor("#424242"))
+            setOnClickListener { dialog.dismiss() }
+        })
+        btnRow.addView(android.widget.Button(ctx).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                0, 108, 1f).apply { marginEnd = 6 }
+            text = "Sans exo"
+            textSize = 13f
+            setBackgroundColor(android.graphics.Color.parseColor("#607D8B"))
+            setTextColor(android.graphics.Color.WHITE)
+            setOnClickListener { dialog.dismiss(); vm.decolle(vol, emptyList()) }
+        })
+        btnRow.addView(android.widget.Button(ctx).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(0, 108, 1f)
+            text = "Decollage"
+            textSize = 13f
+            setBackgroundColor(android.graphics.Color.parseColor("#1565C0"))
+            setTextColor(android.graphics.Color.WHITE)
+            setOnClickListener {
+                dialog.dismiss()
                 val ids = exos.filterIndexed { i, _ -> checked[i] }.map { it.id }
                 vm.decolle(vol, ids)
             }
-            .setNeutralButton("Sans exercice") { _, _ -> vm.decolle(vol, emptyList()) }
-            .setNegativeButton("Annuler", null)
-            .show()
+        })
+        root.addView(btnRow)
+
+        dialog.show()
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.93).toInt(),
+            (resources.displayMetrics.heightPixels * 0.82).toInt()
+        )
     }
 }
