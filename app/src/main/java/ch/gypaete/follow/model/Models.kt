@@ -58,9 +58,10 @@ data class ExercicesResponse(
 
 data class Exercice(
     val id: Int,
-    val categorie: String,
-    val numero: Int,
-    val libelle: String
+    @com.google.gson.annotations.SerializedName("code") val codeExo: String = "",
+    val libelle: String = "",
+    val categorie: String = "",
+    val numero: Int = 0
 )
 
 // ── Réponse POST actions ─────────────────────────────────────────────────────
@@ -85,7 +86,17 @@ data class Event(
     @SerializedName("created_at") val createdAt: String
 )
 
+data class RoomsResponse(
+    val ok: Boolean,
+    val rooms: List<Room>
+)
+
 data class Room(
-    @SerializedName("room_code") val roomCode: Int,
+    @com.google.gson.annotations.SerializedName("room_code") val roomCode: Int,
+    val libelle: String = "Room 1",
+    @com.google.gson.annotations.SerializedName("instructeur_id") val instructeurId: Int = 0,
+    @com.google.gson.annotations.SerializedName("deco_id") val decoId: Int = 0,
+    @com.google.gson.annotations.SerializedName("atterro_id") val atterroId: Int = 0
+) val roomCode: Int,
     val libelle: String
 )
