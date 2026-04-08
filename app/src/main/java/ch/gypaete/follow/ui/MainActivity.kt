@@ -12,6 +12,9 @@ import androidx.lifecycle.lifecycleScope
 import ch.gypaete.follow.R
 import ch.gypaete.follow.api.ApiClient
 import ch.gypaete.follow.service.FollowForegroundService
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -70,6 +73,21 @@ class MainActivity : AppCompatActivity() {
         })
 
         showFragment(FollowMode.DECO)
+
+        // Spinner rooms dans le menu
+        val tvRoom = findViewById<android.widget.TextView>(R.id.tvRoomLabel)
+
+        lifecycleScope.launch {
+            vm.rooms.collect { rooms ->
+                if (rooms.size > 1) {
+                    // Plusieurs rooms : afficher le nom de la room active
+                    val active = rooms.firstOrNull { it.roomCode == vm.uiState.value.room }
+                    tvRoom?.text = active?.libelle ?: "Room 1"
+                } else {
+                    tvRoom?.text = rooms.firstOrNull()?.libelle ?: "v1.0.1"
+                }
+            }
+        }
 
         lifecycleScope.launch {
             vm.toast.collect { msg ->
