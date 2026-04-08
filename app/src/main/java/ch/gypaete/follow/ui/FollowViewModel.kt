@@ -4,8 +4,9 @@ import android.app.Application
 import androidx.lifecycle.*
 import ch.gypaete.follow.api.FollowRepository
 import ch.gypaete.follow.model.*
-import ch.gypaete.follow.model.Room
+import ch.gypaete.follow.util.SoundManager
 import ch.gypaete.follow.util.NotificationHelper
+import ch.gypaete.follow.model.Room
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -116,6 +117,8 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repo.decolle(vol.volId, vol.utilisateurId, _uiState.value.room, exerciceIds)
                 .onSuccess {
+                    SoundManager.playForAction(ctx, "decolle")
+                    NotificationHelper.send(ctx, "Decollage", "${vol.nomComplet} a decolle", "decolle")
                     _toast.emit("Decollage : ${vol.nomComplet}")
                     refresh()
                 }
@@ -127,6 +130,8 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repo.atterri(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
+                    SoundManager.playForAction(ctx, "atterri")
+                    NotificationHelper.send(ctx, "Pose", "${vol.nomComplet} est pose", "atterri")
                     _toast.emit("Pose : ${vol.nomComplet}")
                     refresh()
                 }
@@ -138,6 +143,8 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repo.annule(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
+                    SoundManager.playForAction(ctx, "annule")
+                    NotificationHelper.send(ctx, "Annule", "${vol.nomComplet} annule", "annule")
                     _toast.emit("Annule : ${vol.nomComplet}")
                     refresh()
                 }
@@ -149,18 +156,9 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repo.transfere(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
+                    SoundManager.playForAction(ctx, "transfere")
+                    NotificationHelper.send(ctx, "Transfere", "${vol.nomComplet} transfere", "transfere")
                     _toast.emit("Transfere : ${vol.nomComplet}")
-                    refresh()
-                }
-                .onFailure { e -> _toast.emit("Erreur : ${e.message}") }
-        }
-    }
-
-    fun atteroValideDeco(vol: Vol) {
-        viewModelScope.launch {
-            repo.atteroValideDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
-                .onSuccess {
-                    _toast.emit("Vu deco : ${vol.nomComplet}")
                     refresh()
                 }
                 .onFailure { e -> _toast.emit("Erreur : ${e.message}") }
@@ -171,6 +169,8 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repo.arriveDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
                 .onSuccess {
+                    SoundManager.playForAction(ctx, "arrive_deco")
+                    NotificationHelper.send(ctx, "Arrive deco", "${vol.nomComplet} arrive au deco", "arrive_deco")
                     _toast.emit("Arrive au deco : ${vol.nomComplet}")
                     refresh()
                 }
@@ -181,9 +181,20 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
     private fun loadRooms() {
         viewModelScope.launch {
             repo.fetchRooms()
-                .onSuccess { list ->
-                    if (list.isNotEmpty()) _rooms.update { list }
+                .onSuccess { list -> if (list.isNotEmpty()) _rooms.update { list } }
+        }
+    }
+
+    fun atteroValideDeco(vol: Vol) {
+        viewModelScope.launch {
+            repo.atteroValideDeco(vol.volId, vol.utilisateurId, _uiState.value.room)
+                .onSuccess {
+                    SoundManager.playForAction(ctx, "attero_valide_deco")
+                    NotificationHelper.send(ctx, "Vu deco", "${vol.nomComplet} vu au deco", "attero_valide_deco")
+                    _toast.emit("Vu deco : ${vol.nomComplet}")
+                    refresh()
                 }
+                .onFailure { e -> _toast.emit("Erreur : ${e.message}") }
         }
     }
 
@@ -191,14 +202,6 @@ class FollowViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repo.fetchExercices()
                 .onSuccess { list -> _exercices.update { list } }
-        }
-    }
-
-    // Joue le son uniquement si l'ecran est allume (sinon le service s'en charge)
-    private fun playSound(action: String) {
-        val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
-        if (pm.isInteractive) {
-            SoundManager.playForAction(ctx, action)
         }
     }
 
