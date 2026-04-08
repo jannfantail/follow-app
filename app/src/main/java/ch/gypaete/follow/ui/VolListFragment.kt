@@ -114,8 +114,11 @@ class VolListFragment : Fragment() {
     private fun showExercicesDialog(vol: Vol) {
         val exos = vm.exercices.value
         if (exos.isEmpty()) { vm.decolle(vol, emptyList()); return }
+        // Si tous les libelles sont vides -> decollage direct
+        val exosValides = exos.filter { it.libelle.isNotBlank() }
+        if (exosValides.isEmpty()) { vm.decolle(vol, emptyList()); return }
 
-        val checked = BooleanArray(exos.size) { false }
+        val checked = BooleanArray(exosValides.size) { false }
 
         // Layout personnalise
         val ctx = requireContext()
@@ -162,7 +165,7 @@ class VolListFragment : Fragment() {
             setPadding(0, 8, 0, 8)
         }
 
-        exos.forEachIndexed { i, exo ->
+        exosValides.forEachIndexed { i, exo ->
             val label = exo.libelle.ifBlank { "Exercice ${i+1}" }
             val cb = android.widget.CheckBox(ctx).apply {
                 text = label
@@ -174,7 +177,7 @@ class VolListFragment : Fragment() {
             listLayout.addView(cb)
 
             // Ligne separateur leger
-            if (i < exos.size - 1) {
+            if (i < exosValides.size - 1) {
                 listLayout.addView(android.view.View(ctx).apply {
                     layoutParams = android.widget.LinearLayout.LayoutParams(
                         android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1).apply {
@@ -232,7 +235,7 @@ class VolListFragment : Fragment() {
             setTextColor(android.graphics.Color.WHITE)
             setOnClickListener {
                 dialog.dismiss()
-                val ids = exos.filterIndexed { i, _ -> checked[i] }.map { it.id }
+                val ids = exosValides.filterIndexed { i, _ -> checked[i] }.map { it.id }
                 vm.decolle(vol, ids)
             }
         }
