@@ -46,6 +46,8 @@ class MainActivity : AppCompatActivity() {
 
         // Demarrer le service de surveillance en arriere-plan
         FollowForegroundService.start(this, url, cookie, 1)
+        // Mode initial = DECO
+        FollowForegroundService.setMode(this, "deco")
 
         setContentView(R.layout.activity_main)
         setSupportActionBar(findViewById(R.id.toolbar))
@@ -59,6 +61,9 @@ class MainActivity : AppCompatActivity() {
                 val mode = if (tab.position == 0) FollowMode.DECO else FollowMode.ATTERRO
                 vm.setMode(mode)
                 showFragment(mode)
+                // Informer le service du mode actif pour filtrer les notifications
+                val modeStr = if (tab.position == 0) "deco" else "atterro"
+                FollowForegroundService.setMode(this@MainActivity, modeStr)
             }
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {}
