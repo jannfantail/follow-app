@@ -43,6 +43,13 @@ interface FollowApiService {
         @Field("room")         room: Int = 1
     ): Response<ActionResponse>
 
+    // ── GET rooms de la journée ────────────────────────────────────────────
+    @GET("api.php")
+    suspend fun listRooms(
+        @Query("action") action: String = "list_rooms",
+        @Query("room") room: Int = 1
+    ): Response<RoomsResponse>
+
     // ── POST décolle avec exercices ────────────────────────────────────────
     // Retrofit ne supporte pas List<Int> directement en @Field → on passe
     // par un FormBody dans le Repository
