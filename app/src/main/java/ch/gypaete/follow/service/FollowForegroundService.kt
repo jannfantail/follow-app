@@ -6,7 +6,6 @@ import android.content.Intent
 import android.os.*
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import ch.gypaete.follow.api.ApiClient
 import ch.gypaete.follow.ui.MainActivity
 import ch.gypaete.follow.util.NotificationHelper
 import ch.gypaete.follow.util.SoundManager
@@ -19,14 +18,16 @@ import java.util.concurrent.TimeUnit
 class FollowForegroundService : Service() {
 
     companion object {
-        const val CHANNEL_ID    = "follow_service"
-        const val NOTIF_ID      = 1
-        const val ACTION_START  = "START"
-        const val ACTION_STOP   = "STOP"
-        const val EXTRA_URL     = "url"
-        const val EXTRA_COOKIE  = "cookie"
-        const val EXTRA_ROOM    = "room"
-        private const val TAG   = "FollowService"
+        const val CHANNEL_ID   = "follow_service"
+        const val NOTIF_ID     = 1
+        const val ACTION_START = "START"
+        const val ACTION_STOP  = "STOP"
+        const val ACTION_MODE  = "SET_MODE"
+        const val EXTRA_URL    = "url"
+        const val EXTRA_COOKIE = "cookie"
+        const val EXTRA_ROOM   = "room"
+        const val EXTRA_MODE   = "mode"
+        private const val TAG  = "FollowService"
         private const val POLL_MS = 5_000L
 
         fun start(context: Context, url: String, cookie: String, room: Int) {
@@ -43,21 +44,34 @@ class FollowForegroundService : Service() {
             }
         }
 
+        fun setMode(context: Context, mode: String) {
+            context.startService(
+                Intent(context, FollowForegroundService::class.java).apply {
+                    action = ACTION_MODE
+                    putExtra(EXTRA_MODE, mode)
+                }
+            )
+        }
+
         fun stop(context: Context) {
-            context.startService(Intent(context, FollowForegroundService::class.java).apply {
-                action = ACTION_STOP
-            })
+            context.startService(
+                Intent(context, FollowForegroundService::class.java).apply {
+                    action = ACTION_STOP
+                }
+            )
         }
     }
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var pollJob: Job? = null
-    private var sinceId = 0
     private var baseUrl = ""
     private var cookie  = ""
     private var room    = 1
 
-    // Etat precedent des vols pour detecter les changements
+    // "deco" ou "atterro" — mis a jour par MainActivity quand l'utilisateur change d'onglet
+    @Volatile private var currentMode = "deco"
+
+    // Etat precedent des vols
     private val lastStatus = mutableMapOf<Int, String>()
 
     private val http = OkHttpClient.Builder()
@@ -79,6 +93,10 @@ class FollowForegroundService : Service() {
                 startForeground(NOTIF_ID, buildForegroundNotif())
                 startPolling()
             }
+            ACTION_MODE -> {
+                currentMode = intent.getStringExtra(EXTRA_MODE) ?: "deco"
+                Log.d(TAG, "Mode change: $currentMode")
+            }
             ACTION_STOP -> {
                 stopPolling()
                 stopForeground(true)
@@ -98,28 +116,18 @@ class FollowForegroundService : Service() {
         }
     }
 
-    private fun stopPolling() {
-        pollJob?.cancel()
-        pollJob = null
-    }
+    private fun stopPolling() { pollJob?.cancel(); pollJob = null }
 
     private suspend fun doPoll() {
         val url = "${baseUrl}api.php?action=list&room=$room"
-        val req = Request.Builder()
-            .url(url)
-            .header("Cookie", cookie)
-            .build()
-
+        val req = Request.Builder().url(url).header("Cookie", cookie).build()
         val response = http.newCall(req).execute()
         val body = response.body?.string() ?: return
         if (!body.trimStart().startsWith("{")) return
-
         val json = JSONObject(body)
         if (!json.optBoolean("ok", false)) return
 
-        sinceId = json.optInt("since_id", sinceId)
         val vols = json.optJSONArray("vols") ?: return
-
         for (i in 0 until vols.length()) {
             val vol = vols.getJSONObject(i)
             val volId  = vol.optInt("vol_id")
@@ -128,7 +136,6 @@ class FollowForegroundService : Service() {
             val prev   = lastStatus[volId]
 
             if (prev != null && prev != status) {
-                // Changement detecte - notifier
                 notifyChange(nom, prev, status)
             }
             lastStatus[volId] = status
@@ -136,55 +143,70 @@ class FollowForegroundService : Service() {
     }
 
     private fun notifyChange(nom: String, prev: String, current: String) {
-        val message = when (current) {
-            "air"  -> "$nom a decollé"
-            "down" -> "$nom est posé"
-            "xfer" -> "$nom est transféré"
-            "wait" -> "$nom est arrivé au déco"
-            else   -> "$nom : $current"
+        val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        val screenOn = pm.isInteractive
+
+        // Evenements pertinents selon le mode actif
+        // DECO : interessé par air (decollage), wait (arrive deco), xfer (transfere)
+        // ATTERRO : interessé par air (nouveau en l'air), down (pose), xfer (transfere)
+        val relevantForDeco   = current in listOf("air", "wait", "xfer", "cancel")
+        val relevantForAtterro = current in listOf("air", "down", "xfer")
+
+        val isRelevant = when (currentMode) {
+            "deco"   -> relevantForDeco
+            "atterro" -> relevantForAtterro
+            else      -> true
         }
-        val title = when (current) {
-            "air"  -> "Decollage"
-            "down" -> "Posé"
-            "xfer" -> "Transféré"
-            "wait" -> "Arrivée déco"
-            else   -> "Follow"
+        if (!isRelevant) return
+
+        val actionKey = when {
+            currentMode == "deco"    && current == "air"  -> "decolle"
+            currentMode == "deco"    && current == "wait" -> "arrive_deco"
+            currentMode == "deco"    && current == "xfer" -> "transfere"
+            currentMode == "atterro" && current == "air"  -> "decolle"
+            currentMode == "atterro" && current == "down" -> "atterri"
+            currentMode == "atterro" && current == "xfer" -> "transfere"
+            else -> "notification"
         }
 
-        // Utiliser le son configure pour l'action correspondante
-        val actionKey = when (current) {
-            "air"  -> "decolle"
-            "down" -> "atterri"
-            "xfer" -> "transfere"
-            "wait" -> "arrive_deco"
-            else   -> "notification"
+        val title = when (current) {
+            "air"  -> "Decollage"
+            "down" -> "Pose"
+            "xfer" -> "Transfere"
+            "wait" -> "Arrive au deco"
+            else   -> "Follow"
         }
-        // Son + notification avec le son configure pour cette action
-        SoundManager.playForAction(this, actionKey)
+        val message = when (current) {
+            "air"  -> "$nom a decolle"
+            "down" -> "$nom est pose"
+            "xfer" -> "$nom est transfere"
+            "wait" -> "$nom arrive au deco"
+            else   -> "$nom : $current"
+        }
+
+        // Ecran eteint : jouer le son via SoundManager
+        // Ecran allume : le ViewModel joue deja le son, eviter le doublon
+        if (!screenOn) {
+            SoundManager.playForAction(this, actionKey)
+        }
+        // Notification toujours envoyee
         NotificationHelper.send(this, title, message, actionKey)
     }
+
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Follow Service",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                setSound(null, null)
-                enableVibration(false)
-            }
-            getSystemService(NotificationManager::class.java)
-                .createNotificationChannel(channel)
+                CHANNEL_ID, "Follow Service", NotificationManager.IMPORTANCE_LOW
+            ).apply { setSound(null, null); enableVibration(false) }
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 
     private fun buildForegroundNotif(): Notification {
         val intent = Intent(this, MainActivity::class.java)
-        val pending = PendingIntent.getActivity(
-            this, 0, intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val pending = PendingIntent.getActivity(this, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Follow actif")
             .setContentText("Surveillance des vols en cours")
@@ -197,8 +219,5 @@ class FollowForegroundService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onDestroy() {
-        scope.cancel()
-        super.onDestroy()
-    }
+    override fun onDestroy() { scope.cancel(); super.onDestroy() }
 }
