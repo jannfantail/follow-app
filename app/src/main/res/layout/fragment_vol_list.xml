@@ -6,16 +6,32 @@
     android:orientation="vertical"
     android:background="#F5F7FA">
 
-    <TextView
-        android:id="@+id/tvStatus"
+    <!-- Barre de statut + sélecteur de room -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="8dp"
-        android:textSize="12sp"
-        android:textColor="#555555"
+        android:orientation="horizontal"
         android:background="#E8ECF0"
-        android:gravity="center"
-        android:text="Connexion..." />
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:textSize="12sp"
+            android:textColor="#555555"
+            android:text="Connexion..." />
+
+        <Spinner
+            android:id="@+id/spinnerRoom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"
