@@ -70,7 +70,7 @@ class VolAdapter(
             if (exosValides.isNotEmpty()) {
                 tvExos.visibility = View.VISIBLE
                 tvExos.text = exosValides.joinToString("\n") { exo ->
-                    "[${exo.categorie} ${exo.numero}] ${exo.libelle}"
+                    exo.libelle
                 }
             } else {
                 tvExos.visibility = View.GONE
