@@ -7,6 +7,9 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import ch.gypaete.follow.R
@@ -52,6 +55,48 @@ class VolListFragment : Fragment() {
         tvEmpty     = view.findViewById(R.id.tvEmpty)
         tvStatus    = view.findViewById(R.id.tvStatus)
         progressBar = view.findViewById(R.id.progressBar)
+
+        // Spinner rooms — visible seulement si plusieurs rooms
+        val spinnerRoom = view.findViewById<Spinner>(R.id.spinnerRoom)
+        lifecycleScope.launch {
+            vm.rooms.collect { rooms ->
+                if (rooms.size > 1) {
+                    spinnerRoom.visibility = View.VISIBLE
+                    val labels = rooms.map { it.libelle }.toTypedArray()
+                    val adapter = ArrayAdapter(requireContext(),
+                        android.R.layout.simple_spinner_item, labels)
+                    adapter.setDropDownViewResource(
+                        android.R.layout.simple_spinner_dropdown_item)
+                    spinnerRoom.adapter = adapter
+                    // Selectionner la room active
+                    val idx = rooms.indexOfFirst { it.roomCode == vm.uiState.value.room }
+                    if (idx >= 0) spinnerRoom.setSelection(idx)
+                    spinnerRoom.onItemSelectedListener = object :
+                        AdapterView.OnItemSelectedListener {
+                        override fun onItemSelected(p: AdapterView<*>, v: android.view.View?,
+                            pos: Int, id: Long) {
+                            val selectedRoom = rooms[pos].roomCode
+                            if (selectedRoom != vm.uiState.value.room) {
+                                vm.setRoom(selectedRoom)
+                                FollowForegroundService.start(
+                                    requireContext(),
+                                    requireContext().getSharedPreferences("follow",
+                                        android.content.Context.MODE_PRIVATE)
+                                        .getString("base_url", "") ?: "",
+                                    requireContext().getSharedPreferences("follow",
+                                        android.content.Context.MODE_PRIVATE)
+                                        .getString("session_cookie", "") ?: "",
+                                    selectedRoom
+                                )
+                            }
+                        }
+                        override fun onNothingSelected(p: AdapterView<*>) {}
+                    }
+                } else {
+                    spinnerRoom.visibility = View.GONE
+                }
+            }
+        }
 
         adapter = VolAdapter(mode) { vol, action -> handleAction(vol, action) }
         rvVols.layoutManager = LinearLayoutManager(requireContext())
