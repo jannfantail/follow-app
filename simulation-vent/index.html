@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Brises de vallée &amp; de montagne — Charmey (maquette 3D)</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:rgba(18,24,33,.86); --panel2:rgba(28,36,48,.9);
+    --txt:#e8edf3; --muted:#9fb0c2; --acc:#4ea0ff; --line:#2a3647;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--txt)}
+  #app{position:fixed;inset:0}
+  canvas{display:block}
+
+  .card{background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
+    border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+
+  /* Bandeau titre */
+  #title{position:absolute;top:14px;left:14px;padding:12px 16px;max-width:330px}
+  #title h1{margin:0;font-size:16px;letter-spacing:.2px}
+  #title p{margin:6px 0 0;font-size:12px;color:var(--muted);line-height:1.45}
+
+  /* Panneau infos régime */
+  #regime{position:absolute;top:14px;right:14px;padding:14px 16px;width:268px}
+  #regime .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+  #regime .big{font-size:18px;font-weight:600;margin:4px 0 2px;line-height:1.25}
+  #regime .sub{font-size:12px;color:var(--muted)}
+  #regime .row{display:flex;justify-content:space-between;gap:8px;margin-top:10px;
+    border-top:1px solid var(--line);padding-top:8px;font-size:12px}
+  #regime .row span:last-child{color:#fff;font-variant-numeric:tabular-nums}
+  #dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;
+    vertical-align:middle;box-shadow:0 0 8px currentColor}
+
+  /* Contrôles bas */
+  #controls{position:absolute;left:14px;right:14px;bottom:14px;padding:14px 18px;
+    display:grid;grid-template-columns:1fr 1fr auto;gap:14px 22px;align-items:center}
+  .ctl{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .ctl label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+  .ctl label b{color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:6px;
+    background:#243042;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+    border-radius:50%;background:var(--acc);cursor:pointer;border:2px solid #0d1117;
+    box-shadow:0 0 0 1px var(--acc)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+    background:var(--acc);cursor:pointer;border:2px solid #0d1117}
+
+  .btns{display:flex;gap:8px;align-items:center}
+  button{background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+    border-radius:9px;padding:9px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+  button:hover{border-color:var(--acc)}
+  button.play{background:var(--acc);color:#06121f;font-weight:700;border-color:var(--acc)}
+  .toggles{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:12px;color:var(--muted)}
+  .toggles label{display:flex;gap:5px;align-items:center;cursor:pointer;user-select:none}
+
+  /* Légende couleurs */
+  #legend{position:absolute;right:14px;bottom:118px;padding:12px 14px;width:268px}
+  #legend .t{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px}
+  #bar{height:14px;border-radius:7px;
+    background:linear-gradient(90deg,
+      rgba(40,55,72,1) 0%,
+      #19c64a 8%, #8bd520 30%, #f2c20a 50%, #f57a17 68%, #ec1f1f 83%, #b026e0 100%)}
+  #ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px;
+    font-variant-numeric:tabular-nums}
+  .note{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.4}
+
+  /* étiquettes 3D */
+  .lab{color:#fff;font-size:12px;font-weight:600;text-shadow:0 1px 4px #000,0 0 10px #000;
+    pointer-events:none;white-space:nowrap}
+  .lab.small{font-weight:500;font-size:11px;color:#cfe0f2}
+  .lab.dir{color:#ffd479}
+
+  #hint{position:absolute;left:50%;bottom:118px;transform:translateX(-50%);
+    font-size:11px;color:var(--muted);background:rgba(13,17,23,.5);padding:5px 10px;border-radius:20px}
+  @media (max-width:760px){
+    #controls{grid-template-columns:1fr 1fr;}
+    #legend{display:none}#regime{width:210px}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="title" class="card">
+  <h1>🪂 Brises de pente — Charmey</h1>
+  <p>Maquette 3D du <b>vent de vallée</b> (brise montante, anabatique, le jour)
+  et du <b>vent de montagne</b> (brise descendante, catabatique, la nuit), pilotés
+  par la course du soleil à la date choisie.</p>
+</div>
+
+<div id="regime" class="card">
+  <div class="lbl">Régime de brise</div>
+  <div class="big"><span id="dot"></span><span id="regimeName">—</span></div>
+  <div class="sub" id="regimeDesc">—</div>
+  <div class="row"><span>Heure solaire</span><span id="iTime">—</span></div>
+  <div class="row"><span>Soleil (haut. / azim.)</span><span id="iSun">—</span></div>
+  <div class="row"><span>Vent max sur les pentes</span><span id="iMax">—</span></div>
+</div>
+
+<div id="legend" class="card">
+  <div class="t">Force du vent — zones de couleur</div>
+  <div id="bar"></div>
+  <div id="ticks"><span>0</span><span>10</span><span>20</span><span>30</span><span>&gt;30 km/h</span></div>
+  <div class="note">Pas de couleur = pas de vent · vert = faible · rouge ≈ 30 km/h ·
+  violet = au-delà. Les vecteurs montrent la direction (ils s'inclinent vers le haut
+  le jour, vers le bas la nuit).</div>
+</div>
+
+<div id="hint">Glisse pour pivoter · molette pour zoomer · clic droit pour déplacer</div>
+
+<div id="controls" class="card">
+  <div class="ctl">
+    <label>Date de l'année <b id="dateOut">—</b></label>
+    <input id="day" type="range" min="1" max="365" value="172" />
+  </div>
+  <div class="ctl">
+    <label>Heure de la journée <b id="hourOut">—</b></label>
+    <input id="hour" type="range" min="0" max="24" step="0.05" value="14" />
+  </div>
+  <div class="btns" style="flex-direction:column;align-items:stretch;gap:8px">
+    <div class="btns">
+      <button id="play" class="play">▶ Animer la journée</button>
+      <button id="reset">Vue ↺</button>
+    </div>
+    <div class="toggles">
+      <label><input type="checkbox" id="tVec" checked> Vecteurs</label>
+      <label><input type="checkbox" id="tForce" checked> Zones de force</label>
+      <label><input type="checkbox" id="tSun" checked> Course du soleil</label>
+      <label><input type="checkbox" id="tLab" checked> Étiquettes</label>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import * as BGU from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* ============================================================= *
+ *  CONFIG — réglages globaux de la maquette
+ * ============================================================= */
+const CFG = {
+  LAT: 46.62,            // latitude de Charmey (°)
+  HALF: 2000,            // demi-largeur du terrain (unités ≈ mètres)
+  FLOOR: 880,            // altitude plancher de vallée (m)
+  PEAK:  2200,           // altitude crêtes (m)
+  MAXSPD: 40,            // km/h cartographiés (rouge≈30, violet>30)
+  ARROW_N: 30,           // densité grille de vecteurs (N×N)
+  OVER_SEG: 96,          // résolution de la couche "force"
+  TER_SEG: 220,          // résolution du relief
+};
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const smooth=(e0,e1,x)=>{const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);};
+const deg=Math.PI/180;
+
+/* ============================================================= *
+ *  RELIEF — vallée de Charmey stylisée (bruit de valeur procédural)
+ * ============================================================= */
+function hash(i,j){const n=Math.sin(i*127.1+j*311.7)*43758.5453;return n-Math.floor(n);}
+function vnoise(x,y){
+  const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);
+  return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;
+}
+function fbm(x,y){let s=0,a=0.5,f=1;for(let o=0;o<5;o++){s+=a*vnoise(x*f,y*f);f*=2;a*=0.5;}return s;}
+
+// axe de vallée : +X = amont (vers Jaun, ça monte) · -X = aval (lac de Montsalvens)
+function valleyCenter(x){ return 320*Math.sin(x/1250) - 120*Math.sin(x/520); }
+function peakBump(x,z,px,pz,r,h){const dx=x-px,dz=z-pz;return h*Math.exp(-(dx*dx+dz*dz)/(2*r*r));}
+
+function height(x,z){
+  const zc=valleyCenter(x);
+  const d=Math.abs(z-zc);                       // distance au thalweg
+  const floorA=CFG.FLOOR + 0.085*x;             // la vallée descend vers l'aval (-X)
+  const up=smooth(240, 1700, d);                // 0 fond de vallée → 1 crêtes
+  let h=floorA + (CFG.PEAK-CFG.FLOOR)*up;
+  // massifs et crêtes
+  h += up*820*(fbm(x/540+11, z/540-4)-0.32);
+  // sommets nommés (stylisés)
+  h += peakBump(x,z, 1250,-820, 520, 540);      // Vanil Noir
+  h += peakBump(x,z, -260, 760, 460, 360);      // Vounetz
+  h += peakBump(x,z,-1320,-560, 430, 410);      // Dent de Broc
+  h += peakBump(x,z,  560, 980, 520, 300);      // crête est
+  // ondulations douces du fond
+  h += (1-up)*46*(fbm(x/210,z/210)-0.5);
+  return h;
+}
+function gradient(x,z){ // pente locale (dh/dx, dh/dz) par différences finies
+  const e=9;
+  const gx=(height(x+e,z)-height(x-e,z))/(2*e);
+  const gz=(height(x,z+e)-height(x,z-e))/(2*e);
+  return {gx,gz,slope:Math.hypot(gx,gz)};
+}
+
+/* ============================================================= *
+ *  COULEUR — vitesse (km/h) → RGBA (échelle pédagogique demandée)
+ * ============================================================= */
+const STOPS=[ // v(km/h), r,g,b, alpha
+  [0.0 ,0.16,0.22,0.30, 0.00],
+  [0.6 ,0.10,0.78,0.29, 0.34],
+  [10  ,0.55,0.84,0.13, 0.46],
+  [18  ,0.95,0.76,0.04, 0.58],
+  [24  ,0.96,0.48,0.09, 0.66],
+  [30  ,0.92,0.12,0.12, 0.74],
+  [40  ,0.69,0.15,0.88, 0.86],
+];
+function speedColor(v){
+  if(v<=STOPS[0][0]) return STOPS[0];
+  for(let i=1;i<STOPS.length;i++){
+    if(v<=STOPS[i][0]||i===STOPS.length-1){
+      const a=STOPS[i-1],b=STOPS[i],t=clamp((v-a[0])/(b[0]-a[0]),0,1);
+      return [0,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t,a[3]+(b[3]-a[3])*t,a[4]+(b[4]-a[4])*t];
+    }
+  }
+  return STOPS[STOPS.length-1];
+}
+
+/* ============================================================= *
+ *  SOLEIL — position pour la date & l'heure (latitude Charmey)
+ *  Repère scène : +X=Est, -X=Ouest, +Z=Nord, -Z=Sud, +Y=haut
+ * ============================================================= */
+function sunPosition(day, hour){
+  const phi=CFG.LAT*deg;
+  const decl=23.44*deg*Math.sin(2*Math.PI*(284+day)/365);
+  const H=(hour-12)*15*deg;                         // angle horaire
+  const sinE=Math.sin(phi)*Math.sin(decl)+Math.cos(phi)*Math.cos(decl)*Math.cos(H);
+  const elev=Math.asin(clamp(sinE,-1,1));
+  let cosA=(Math.sin(decl)-Math.sin(elev)*Math.sin(phi))/(Math.cos(elev)*Math.cos(phi));
+  let az=Math.acos(clamp(cosA,-1,1));               // depuis le Nord
+  if(H>0) az=2*Math.PI-az;                          // après-midi → ouest
+  const dir=new THREE.Vector3(
+    Math.cos(elev)*Math.sin(az),   // Est
+    Math.sin(elev),                // haut
+    Math.cos(elev)*Math.cos(az)    // Nord
+  );
+  return {elev,az,dir};
+}
+
+/* ============================================================= *
+ *  SCÈNE
+ * ============================================================= */
+const app=document.getElementById('app');
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x9fb8d4, 5200, 12000);
+
+const camera=new THREE.PerspectiveCamera(48, innerWidth/innerHeight, 1, 30000);
+const HOME=new THREE.Vector3(-1600, 2600, 3600);
+camera.position.copy(HOME);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+app.appendChild(renderer.domElement);
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(innerWidth,innerHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.top='0';
+labelRenderer.domElement.style.pointerEvents='none';
+app.appendChild(labelRenderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.target.set(0,1150,0);
+controls.enableDamping=true;controls.dampingFactor=0.08;
+controls.maxPolarAngle=Math.PI*0.49;controls.minDistance=900;controls.maxDistance=11000;
+
+const sun=new THREE.DirectionalLight(0xffffff,2.0);
+scene.add(sun);
+const amb=new THREE.HemisphereLight(0xbcd3f0,0x42504a,0.65);
+scene.add(amb);
+
+/* ---- Relief : maillage coloré façon vue satellite ---- */
+const terGeo=new THREE.PlaneGeometry(CFG.HALF*2,CFG.HALF*2,CFG.TER_SEG,CFG.TER_SEG);
+terGeo.rotateX(-Math.PI/2);
+{
+  const p=terGeo.attributes.position, col=[];
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i), z=p.getZ(i), h=height(x,z);
+    p.setY(i,h);
+    const rel=clamp((h-CFG.FLOOR)/(CFG.PEAK-CFG.FLOOR),0,1);
+    const sl=gradient(x,z).slope;
+    const n=fbm(x/120,z/120);
+    let r,g,b;
+    if(rel<0.05){ r=0.42+0.12*n; g=0.56+0.12*n; b=0.30+0.06*n; }      // prairies fond
+    else if(rel<0.42){ const f=smooth(0.05,0.42,rel);                  // forêts
+      r=0.30-0.10*f+0.06*n; g=0.46-0.10*f+0.06*n; b=0.22-0.06*f; }
+    else if(rel<0.74){ const f=smooth(0.42,0.74,rel);                  // alpages/roche
+      r=0.40+0.16*f+0.05*n; g=0.44+0.10*f; b=0.34+0.10*f; }
+    else { const f=smooth(0.74,0.92,rel); r=g=b=0.55+0.42*f; }         // roche→neige
+    if(sl>0.55){ r=r*0.7+0.34; g=g*0.7+0.32; b=b*0.7+0.30; }           // falaises grises
+    col.push(r,g,b);
+  }
+  terGeo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  terGeo.computeVertexNormals();
+}
+const terrain=new THREE.Mesh(terGeo,new THREE.MeshLambertMaterial({vertexColors:true}));
+scene.add(terrain);
+
+/* ---- Lac de Montsalvens (à l'aval) ---- */
+{
+  const lake=new THREE.Mesh(
+    new THREE.PlaneGeometry(900,1400,1,1).rotateX(-Math.PI/2),
+    new THREE.MeshStandardMaterial({color:0x2d6fb0,roughness:0.25,metalness:0.3,
+      transparent:true,opacity:0.9}));
+  lake.position.set(-1620, CFG.FLOOR-22, 260);
+  scene.add(lake);
+}
+
+/* ---- Couche "force du vent" (zones de couleur, alpha par shader) ---- */
+const overGeo=new THREE.PlaneGeometry(CFG.HALF*2,CFG.HALF*2,CFG.OVER_SEG,CFG.OVER_SEG);
+overGeo.rotateX(-Math.PI/2);
+const overN=overGeo.attributes.position.count;
+const oStatic=[]; // {x,z,upx,upz,slope}
+for(let i=0;i<overN;i++){
+  const x=overGeo.attributes.position.getX(i), z=overGeo.attributes.position.getZ(i);
+  overGeo.attributes.position.setY(i,height(x,z)+14);
+  const g=gradient(x,z); const gl=Math.hypot(g.gx,g.gz)||1e-6;
+  oStatic.push({x,z,upx:g.gx/gl,upz:g.gz/gl,slope:g.slope});
+}
+overGeo.setAttribute('acol',new THREE.Float32BufferAttribute(new Float32Array(overN*4),4));
+const overMat=new THREE.ShaderMaterial({
+  transparent:true,depthWrite:false,
+  vertexShader:`attribute vec4 acol;varying vec4 vC;
+    void main(){vC=acol;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`varying vec4 vC;void main(){if(vC.a<0.01)discard;gl_FragColor=vC;}`
+});
+const overlay=new THREE.Mesh(overGeo,overMat);
+scene.add(overlay);
+
+/* ---- Vecteurs vent (InstancedMesh : hampe + pointe) ---- */
+function buildArrowGeo(){
+  const shaft=new THREE.CylinderGeometry(0.05,0.05,0.7,7).translate(0,0.35,0);
+  const head =new THREE.ConeGeometry(0.16,0.32,9).translate(0,0.86,0);
+  return BGU.mergeGeometries([shaft,head]);
+}
+const AN=CFG.ARROW_N, ACOUNT=AN*AN;
+const arrows=new THREE.InstancedMesh(buildArrowGeo(),
+  new THREE.MeshLambertMaterial({}), ACOUNT);
+arrows.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+arrows.setColorAt(0,new THREE.Color());          // alloue instanceColor
+scene.add(arrows);
+const aStatic=[];
+for(let j=0;j<AN;j++)for(let i=0;i<AN;i++){
+  const x=-CFG.HALF + (i+0.5)/AN*CFG.HALF*2;
+  const z=-CFG.HALF + (j+0.5)/AN*CFG.HALF*2;
+  const g=gradient(x,z); const gl=Math.hypot(g.gx,g.gz)||1e-6;
+  aStatic.push({x,z,h:height(x,z),upx:g.gx/gl,upz:g.gz/gl,slope:g.slope});
+}
+
+/* ---- Soleil : disque + halo + trajectoire ---- */
+const SKYR=8200;
+const sunDisk=new THREE.Mesh(new THREE.SphereGeometry(220,20,20),
+  new THREE.MeshBasicMaterial({color:0xfff3c0}));
+const sunHalo=new THREE.Mesh(new THREE.SphereGeometry(420,20,20),
+  new THREE.MeshBasicMaterial({color:0xffd86b,transparent:true,opacity:0.25}));
+scene.add(sunDisk,sunHalo);
+const sunPath=new THREE.Line(new THREE.BufferGeometry(),
+  new THREE.LineBasicMaterial({color:0xffe08a,transparent:true,opacity:0.55}));
+scene.add(sunPath);
+
+/* ---- Étiquettes ---- */
+const labels=[];
+function addLabel(x,z,txt,cls){
+  const el=document.createElement('div'); el.className='lab '+(cls||''); el.textContent=txt;
+  const o=new CSS2DObject(el); o.position.set(x,height(x,z)+90,z); scene.add(o); labels.push(o); return o;
+}
+addLabel(60,80,'Charmey ▾');
+addLabel(1250,-820,'Vanil Noir','small');
+addLabel(-260,760,'Vounetz','small');
+addLabel(-1320,-560,'Dent de Broc','small');
+addLabel(1850,0,'⟵ Amont (vers Jaun)','dir');
+addLabel(-1850,200,'Aval / lac ⟶','dir');
+
+/* ============================================================= *
+ *  MODÈLE DE BRISE — combine relief (statique) + soleil (dynamique)
+ * ============================================================= */
+const _q=new THREE.Quaternion(), _yUp=new THREE.Vector3(0,1,0),
+      _dir=new THREE.Vector3(), _m=new THREE.Matrix4(),
+      _pos=new THREE.Vector3(), _scl=new THREE.Vector3(), _col=new THREE.Color();
+
+function envFor(day,hour){
+  const s=sunPosition(day,hour);
+  const heat=clamp(Math.sin(s.elev),0,1);                 // chauffage solaire
+  const cool=s.elev<0 ? clamp(-Math.sin(s.elev)*2.0,0,1):0;// refroidissement nocturne
+  const season=0.45+0.55*clamp(0.5+0.5*Math.sin(2*Math.PI*(day-80)/365),0,1);
+  const sh=Math.hypot(s.dir.x,s.dir.z)||1e-6;
+  return {s,heat,cool,season,sunHx:s.dir.x/sh,sunHz:s.dir.z/sh};
+}
+// renvoie {speed(km/h), dx,dy,dz unit} pour un point de pente donné
+function windAt(P,env){
+  const slopeF=clamp(P.slope*1.6,0,1);
+  if(env.heat>=env.cool && env.heat>0.02){
+    // ANABATIQUE — monte la pente + remonte la vallée ; + fort face au soleil
+    const face=clamp(P.upx*env.sunHx+P.upz*env.sunHz,0,1);
+    const spd=env.heat*env.season*(0.30+0.70*slopeF)*(0.35+0.65*face)*CFG.MAXSPD;
+    let dx=P.upx*0.7 + 0.9, dz=P.upz*0.7;     // +X = amont
+    const dy=0.18+0.8*P.slope;
+    const l=Math.hypot(dx,dz,dy)||1;
+    return {speed:spd, dx:dx/l, dy:dy/l, dz:dz/l};
+  } else if(env.cool>0.02){
+    // CATABATIQUE — descend la pente + descend la vallée ; plus douce
+    const spd=env.cool*(0.45+0.55*env.season)*(0.30+0.70*slopeF)*0.55*CFG.MAXSPD;
+    let dx=-P.upx*0.7 - 0.9, dz=-P.upz*0.7;   // -X = aval
+    const dy=-(0.18+0.8*P.slope);
+    const l=Math.hypot(dx,dz,dy)||1;
+    return {speed:spd, dx:dx/l, dy:dy/l, dz:dz/l};
+  }
+  return {speed:0,dx:1,dy:0,dz:0};
+}
+
+let maxSpeed=0;
+function recompute(day,hour){
+  const env=envFor(day,hour);
+  maxSpeed=0;
+  // -- couche force --
+  const ac=overGeo.attributes.acol.array;
+  for(let i=0;i<overN;i++){
+    const w=windAt(oStatic[i],env), c=speedColor(w.speed);
+    ac[i*4]=c[1];ac[i*4+1]=c[2];ac[i*4+2]=c[3];ac[i*4+3]=overlay.visible?c[4]:0;
+  }
+  overGeo.attributes.acol.needsUpdate=true;
+  // -- vecteurs --
+  for(let k=0;k<ACOUNT;k++){
+    const P=aStatic[k], w=windAt(P,env);
+    if(w.speed>maxSpeed)maxSpeed=w.speed;
+    const len=(40+ clamp(w.speed,0,CFG.MAXSPD)/CFG.MAXSPD*170);
+    const wid=34;
+    if(w.speed<0.6){ _scl.set(0,0,0); } else { _scl.set(wid,len,wid); }
+    _dir.set(w.dx,w.dy,w.dz);
+    _q.setFromUnitVectors(_yUp,_dir);
+    _pos.set(P.x,P.h+20,P.z);
+    _m.compose(_pos,_q,_scl);
+    arrows.setMatrixAt(k,_m);
+    const c=speedColor(Math.max(w.speed,1.5));
+    _col.setRGB(c[1],c[2],c[3]); arrows.setColorAt(k,_col);
+  }
+  arrows.instanceMatrix.needsUpdate=true;
+  if(arrows.instanceColor)arrows.instanceColor.needsUpdate=true;
+  updateSun(env,day);
+  updateHUD(env,day,hour);
+}
+
+/* ---- Soleil & ciel ---- */
+function skyColor(elev){
+  const day=new THREE.Color(0x8fb6e6), dusk=new THREE.Color(0xe98b53),
+        night=new THREE.Color(0x0b1430);
+  if(elev>10*deg) return day;
+  if(elev>-2*deg){ const t=smooth(-2*deg,10*deg,elev); return night.clone().lerp(dusk,1).lerp(day,t).lerp(dusk,1-t);}
+  return night.clone().lerp(dusk, clamp((elev+12*deg)/(10*deg),0,1)*0.4);
+}
+function updateSun(env,day){
+  const d=env.s.dir;
+  sun.position.copy(d).multiplyScalar(SKYR);
+  sun.intensity=clamp(env.heat,0,1)*2.0+0.05;
+  sun.color.setHSL(0.12, 0.6, clamp(0.55+env.s.elev,0.5,0.95)>0.7?0.95:0.7);
+  sunDisk.position.copy(d).multiplyScalar(SKYR);
+  sunHalo.position.copy(sunDisk.position);
+  const vis=env.s.elev>-3*deg;
+  sunDisk.visible=sunHalo.visible=vis;
+  const sky=skyColor(env.s.elev);
+  scene.background=sky; scene.fog.color.copy(sky);
+  amb.intensity=0.25+0.5*clamp(env.heat,0,1);
+  // trajectoire du jour
+  const pts=[];
+  for(let t=2;t<=22;t+=0.4){ const p=sunPosition(day,t); if(p.elev>-3*deg)
+    pts.push(p.dir.clone().multiplyScalar(SKYR)); }
+  sunPath.geometry.setFromPoints(pts);
+}
+
+/* ---- HUD ---- */
+const $=id=>document.getElementById(id);
+function fmtDate(d){const dt=new Date(2026,0,1);dt.setDate(d);
+  return dt.toLocaleDateString('fr-CH',{day:'numeric',month:'long'});}
+function fmtHour(h){const m=Math.round((h%1)*60);return `${String(Math.floor(h)).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
+function updateHUD(env,day,hour){
+  let name,desc,color;
+  if(env.heat>=env.cool && env.heat>0.05){
+    name='Vent de vallée ↑'; color='#19c64a';
+    desc='Brise montante (anabatique) — l\'air chaud remonte pentes et vallée vers l\'amont.';
+  } else if(env.cool>0.05){
+    name='Vent de montagne ↓'; color='#4ea0ff';
+    desc='Brise descendante (catabatique) — l\'air froid s\'écoule vers l\'aval et le lac.';
+  } else { name='Transition / calme'; color='#9fb0c2';
+    desc='Bascule aube/crépuscule — les brises s\'inversent, vent quasi nul.'; }
+  $('regimeName').textContent=name; $('regimeDesc').textContent=desc;
+  $('dot').style.color=color;
+  $('iTime').textContent=fmtHour(hour);
+  $('iSun').textContent=`${(env.s.elev/deg).toFixed(0)}° / ${(env.s.az/deg).toFixed(0)}°`;
+  $('iMax').textContent=`${maxSpeed.toFixed(0)} km/h`;
+  $('dateOut').textContent=fmtDate(day);
+  $('hourOut').textContent=fmtHour(hour);
+}
+
+/* ============================================================= *
+ *  UI
+ * ============================================================= */
+let DAY=+$('day').value, HOUR=+$('hour').value, playing=false;
+function refresh(){ recompute(DAY,HOUR); }
+$('day').addEventListener('input',e=>{DAY=+e.target.value;refresh();});
+$('hour').addEventListener('input',e=>{HOUR=+e.target.value;refresh();});
+$('tVec').addEventListener('change',e=>{arrows.visible=e.target.checked;});
+$('tForce').addEventListener('change',e=>{overlay.visible=e.target.checked;refresh();});
+$('tSun').addEventListener('change',e=>{sunPath.visible=e.target.checked;});
+$('tLab').addEventListener('change',e=>{labels.forEach(l=>l.visible=e.target.checked);});
+$('reset').addEventListener('click',()=>{camera.position.copy(HOME);controls.target.set(0,1150,0);});
+const playBtn=$('play');
+playBtn.addEventListener('click',()=>{playing=!playing;
+  playBtn.textContent=playing?'⏸ Pause':'▶ Animer la journée';
+  playBtn.classList.toggle('play',!playing);});
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);labelRenderer.setSize(innerWidth,innerHeight);
+});
+
+/* ---- Boucle ---- */
+let last=performance.now();
+function loop(now){
+  const dt=(now-last)/1000; last=now;
+  if(playing){ HOUR+=dt*1.6; if(HOUR>=24)HOUR-=24;       // ~15 s / journée
+    $('hour').value=HOUR; refresh(); }
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+  requestAnimationFrame(loop);
+}
+refresh();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
