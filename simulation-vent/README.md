@@ -8,12 +8,18 @@ vallée type **Charmey** (Gruyère) reconstituée en 3D.
 ## Ouvrir
 
 Ouvre simplement `index.html` dans un navigateur récent (Chrome / Firefox /
-Safari). Une connexion internet est nécessaire au premier chargement
-(Three.js est servi depuis un CDN).
+Safari) — **double-clic, aucune connexion internet requise** : Three.js est
+intégré directement dans le fichier (page 100 % autoportante).
 
 ```
 simulation-vent/index.html
 ```
+
+## Aperçu
+
+| Jour — vent de vallée ↑ | Nuit — vent de montagne ↓ |
+|---|---|
+| ![jour](preview-jour.png) | ![nuit](preview-nuit.png) |
 
 ## Ce que montre la maquette
 
